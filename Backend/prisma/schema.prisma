@@ -4,10 +4,108 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeviceType {
+  WEBSITE
+  API
+  IP
+}
+
+enum HealthStatus {
+  UP
+  DOWN
+}
+
+enum ActivityAction {
+  LOGIN
+  LOGOUT
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum ActivityEntity {
+  DEVICE
+  USER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  fullName     String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  devices       Device[]
+  activityLogs  ActivityLog[]
+}
+
+model Device {
+  id        String     @id @default(uuid())
+
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  host      String
+  type      DeviceType
+
+  interval  Int        @default(1)
+  enabled   Boolean    @default(true)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  healthLogs HealthLog[]
+
+  @@index([userId])
+  @@index([host])
+}
+
+model HealthLog {
+  id            String        @id @default(uuid())
+
+  deviceId       String
+  device         Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  status         HealthStatus
+
+  latency        Int?
+
+  responseCode   Int?
+
+  message        String?
+
+  checkedAt      DateTime      @default(now())
+
+  @@index([deviceId])
+  @@index([checkedAt])
+  @@index([deviceId, checkedAt])
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action ActivityAction
+
+  entity ActivityEntity?
+
+  entityId    String?
+
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
 }
