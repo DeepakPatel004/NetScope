@@ -1,11 +1,11 @@
 import prisma from "../../config/database.js";
 
+const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
 
 export const deviceService = {
 
-    //Create a new Device
-   async createDevice(deviceData) {
-
+  // Create a new Device
+  async createDevice(deviceData) {
     return await prisma.device.create({
       data: {
         ...deviceData,
@@ -14,31 +14,42 @@ export const deviceService = {
     });
   },
 
-    //Get All device for specific user
-    async getDevices(userId){
-        return prisma.device.findMany({
-            where : {MOCK_USER_ID},
-            orderBy : {createdAt : 'desc'},
-        })
-    },
+  // Get All devices for specific user
+  async getDevices(userId) {
+    return prisma.device.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  },
 
-    //Update an existing device
-    async updateDevice(userId,id,data){
-        const device = await this.getDevices(userId,id)
-        if(!device) return null;
-        
-        return prisma.device.update({
-            where : {id},
-            data,
-        });
-    },
+  // Get a single device by ID and user ID
+  async getDeviceById(userId, id) {
+    return prisma.device.findFirst({
+      where: {
+        id,
+        userId,
+      },
+    });
+  },
 
-    async deleteDevice(userId,id){
-        const device = await this.getDeviceById(userId,id);
-        if(!device) return null;
+  // Update an existing device
+  async updateDevice(userId, id, data) {
+    const device = await this.getDeviceById(userId, id);
+    if (!device) return null;
 
-        return prisma.device.delete({
-            where : {id},
-        });
-    },
+    return prisma.device.update({
+      where: { id },
+      data,
+    });
+  },
+
+  // Delete a device
+  async deleteDevice(userId, id) {
+    const device = await this.getDeviceById(userId, id);
+    if (!device) return null;
+
+    return prisma.device.delete({
+      where: { id },
+    });
+  },
 };

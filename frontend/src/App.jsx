@@ -4,8 +4,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Devices from './pages/Devices.jsx';
 import AddDevice from './pages/AddDevice.jsx'; 
 import DeviceDetails from './pages/DeviceDetails.jsx';
-
-const Settings = () => <div className="p-8 text-2xl font-bold">Settings Page Coming Soon...</div>;
+import Settings from './pages/Settings.jsx';
 
 function App() {
   return (
@@ -15,6 +14,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/devices" element={<Devices />} />
           <Route path="/devices/new" element={<AddDevice />} />
+          <Route path="/devices/edit/:id" element={<AddDevice />} />
           <Route path="/devices/:id" element={<DeviceDetails />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

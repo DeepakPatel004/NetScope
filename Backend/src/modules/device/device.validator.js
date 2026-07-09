@@ -1,6 +1,6 @@
-import {z} from 'zod'
+import { z } from 'zod';
 
-//Blueprint for creating a new device
+// Blueprint for creating a new device
 const createDeviceSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   host: z.string().trim().min(1, 'Host is required'),
@@ -12,12 +12,13 @@ const createDeviceSchema = z.object({
     .int()
     .positive('Interval must be greater than 0')
     .default(1),
+  enabled: z.boolean().optional(),
 });
 
-//Blueprint for updating a device
+// Blueprint for updating a device
 const updateDeviceSchema = createDeviceSchema.partial();
 
 export const deviceValidator = {
-    create : createDeviceSchema,
-    update : updateDeviceSchema,
+  create: createDeviceSchema,
+  update: updateDeviceSchema,
 };

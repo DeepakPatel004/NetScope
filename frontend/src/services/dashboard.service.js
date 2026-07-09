@@ -9,5 +9,10 @@ export const dashboardService = {
   getDevicesStatus: async () => {
     const response = await api.get('/dashboard/devices');
     return response.data;
+  },
+
+  getDeviceDetails: async (id) => {
+    const response = await api.get(`/dashboard/device/${id}`);
+    return response.data;
   }
 };

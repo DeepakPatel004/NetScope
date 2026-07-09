@@ -77,6 +77,8 @@ export const dashboardService = {
         status: latestLog ? latestLog.status : 'UNKNOWN',
         latency: latestLog ? latestLog.latency : null,
         lastChecked: latestLog ? latestLog.checkedAt : device.updatedAt,
+        interval: device.interval,
+        enabled: device.enabled,
       };
     });
   },
@@ -131,7 +133,7 @@ export const dashboardService = {
         status: log.status,
         latency: log.latency,
         checkedAt: log.checkedAt,
-        errorMessage: log.errorMessage,
+        errorMessage: log.message,
       })),
     };
   },
