@@ -1,15 +1,26 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import MainLayout from './components/layout/MainLayout.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import Devices from './pages/Devices.jsx';
+import AddDevice from './pages/AddDevice.jsx'; 
+import DeviceDetails from './pages/DeviceDetails.jsx';
+
+const Settings = () => <div className="p-8 text-2xl font-bold">Settings Page Coming Soon...</div>;
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>hello</>
-  )
+    <Router>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/devices" element={<Devices />} />
+          <Route path="/devices/new" element={<AddDevice />} />
+          <Route path="/devices/:id" element={<DeviceDetails />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
