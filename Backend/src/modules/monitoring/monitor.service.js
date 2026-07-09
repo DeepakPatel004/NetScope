@@ -8,10 +8,10 @@ export const monitorService = {
    * @param {string} host - The target to check
    */
 
-    async checkDevice(type,host){
-        switch(type){
+    async checkDevice(type, host) {
+        switch(type) {
             case 'IP':
-                return pingSevice.check(host);
+                return pingService.check(host);
             
             case 'WEBSITE':
             case 'API':
@@ -21,7 +21,6 @@ export const monitorService = {
             default:
                  throw new Error(`Unsupported device type : ${type}`);
         }
-    
     }
 
 }

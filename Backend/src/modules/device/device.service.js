@@ -3,14 +3,13 @@ import prisma from "../../config/database.js";
 export const deviceService = {
 
     //Create a new Device
-    async createDevice(userId, data){
-        return prisma.device.create({
-            data : {
-                ...data,
-                userId,
-            }
-        })
-    },
+   async createDevice(deviceData) {
+    return await prisma.device.create({
+      data: {
+        ...deviceData
+      }
+    });
+  },
 
     //Get All device for specific user
     async getDevices(userId){

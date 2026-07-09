@@ -2,27 +2,17 @@ import { tr } from "zod/v4/locales";
 import { deviceService} from "./device.service.js";
 import { deviceValidator } from "./device.validator.js";
 
-const MOCK_USER_ID = '11111111-11';
+const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
 
 export const deviceController = {
-    async createDevice(req,res,next){
-
-        try{
-        const validation = deviceValidator.create.safeParse(req.body);
-        if(!validation.success){
-            return res.status(400).json({
-          success: false,
-          message: validation.error.errors[0].message,
-        });
-        }
-        const device = await deviceService.createDevice(MOCK_USER_ID,validation.data);
-        return res.status(201).json({
-        success: true,
-        message: 'Device created',
-        data: device,
-      });
+    async createDevice(req, res, next) {
+    try {
+      const device = await deviceService.createDevice(req.body);
+      return res.status(201).json({ success: true, data: device });
     } catch (error) {
-      next(error); 
+      console.error(error);
+      const errorMessage = error?.details?.[0]?.message || error?.message || 'Server Error';
+      return res.status(400).json({ success: false, message: errorMessage });
     }
   },
 
