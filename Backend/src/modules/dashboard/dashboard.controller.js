@@ -2,7 +2,7 @@ import { dashboardService } from './dashboard.service.js';
 
 // Global placeholder for local testing until auth middleware is built
 const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
-
+                      
 export const dashboardController = {
   async getSummary(req, res, next) {
     try {

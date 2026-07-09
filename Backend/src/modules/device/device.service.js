@@ -1,12 +1,15 @@
 import prisma from "../../config/database.js";
 
+
 export const deviceService = {
 
     //Create a new Device
    async createDevice(deviceData) {
+
     return await prisma.device.create({
       data: {
-        ...deviceData
+        ...deviceData,
+        userId: MOCK_USER_ID,
       }
     });
   },
@@ -14,7 +17,7 @@ export const deviceService = {
     //Get All device for specific user
     async getDevices(userId){
         return prisma.device.findMany({
-            where : {userId},
+            where : {MOCK_USER_ID},
             orderBy : {createdAt : 'desc'},
         })
     },

@@ -6,8 +6,9 @@ export const dashboardService = {
    * Calculates the overall summary metrics for the dashboard
    */
   async getSummary(userId) {
+
     const devices = await prisma.device.findMany({
-      where: { userId },
+      where: { userId},
       include: {
         healthLogs: {
           orderBy: { checkedAt: 'desc' },
@@ -15,6 +16,7 @@ export const dashboardService = {
         },
       },
     });
+
 
     const totalDevices = devices.length;
     let onlineCount = 0;
@@ -26,7 +28,7 @@ export const dashboardService = {
       const latestLog = device.healthLogs[0];
       
       // Determine online status based on latest health log or fallback to device default status
-      const isOnline = latestLog ? latestLog.status === 'UP' : device.status === 'ONLINE';
+      const isOnline = latestLog ? latestLog.status === 'UP' : false; // If no log exists, assume offline
       if (isOnline) {
         onlineCount++;
       } else {

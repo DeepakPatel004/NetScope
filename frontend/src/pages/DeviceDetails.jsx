@@ -9,8 +9,12 @@ export default function DeviceDetails() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
     const fetchDetails = async () => {
+      setLoading(true);
+      
+      
       try {
         const response = await dashboardService.getDeviceDetails(id);
         // Reverse the timeline so the chart reads left-to-right (oldest to newest)

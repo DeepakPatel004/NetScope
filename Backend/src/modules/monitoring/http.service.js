@@ -28,7 +28,7 @@ export const httpService ={
             };
 
         }
-        catch(e){
+        catch(error){
             // If it completely times out or DNS fails, axios throws an error
             return {status : 'DOWN',
             latency : null,

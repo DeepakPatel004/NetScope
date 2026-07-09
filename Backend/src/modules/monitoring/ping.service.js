@@ -1,7 +1,7 @@
 import ping from 'ping'
 import { hostname } from 'zod'
 
-export const pingSevices = {
+export const pingServices = {
     /**
    * Pings an IP address or hostname
    * @param {string} host - The IP or domain to check

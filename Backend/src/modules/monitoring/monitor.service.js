@@ -1,4 +1,4 @@
-import { pingSevices } from "./ping.service.js";
+import { pingServices } from "./ping.service.js";
 import { httpService } from "./http.service.js";
 
 export const monitorService = {
@@ -11,7 +11,7 @@ export const monitorService = {
     async checkDevice(type, host) {
         switch(type) {
             case 'IP':
-                return pingService.check(host);
+                return pingServices.check(host);
             
             case 'WEBSITE':
             case 'API':

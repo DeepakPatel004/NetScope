@@ -3,11 +3,13 @@ import { dashboardService } from '../services/dashboard.service.js';
 import { CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+
 export default function DeviceTable() {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  
   useEffect(() => {
     const fetchDevices = async () => {
       try {

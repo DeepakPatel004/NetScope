@@ -3,6 +3,8 @@ import redisConnection from "../config/redis.js";
 import { QUEUE_NAMES } from "../config/queue.js";
 import { monitorService } from "../modules/monitoring/monitor.service.js";
 import { healthService } from "../modules/health/health.service.js";
+import { pingServices } from "../modules/monitoring/ping.service.js"; 
+import { httpService } from "../modules/monitoring/http.service.js";
 
 export const startHealthWorker = () => {
   const worker = new Worker(
