@@ -153,7 +153,7 @@ export default function DeviceTable({ refreshTrigger }) {
                 <td colSpan="6" className="p-12 text-center">
                   <div className="max-w-md mx-auto flex flex-col items-center">
                     <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 text-indigo-400 rounded-full mb-4">
-                      <Server size={32} />
+                      <h1 size={32} />
                     </div>
                     <h3 className="text-base font-bold text-slate-200">No Services Configured</h3>
                     <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
