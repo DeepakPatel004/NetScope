@@ -6,13 +6,28 @@ Built on top of a highly resilient asynchronous event loop, NetScope integrates 
 
 ---
 
-## 🚀 Key Features
+## 🚀 Core Modules (v2.0)
 
 *   **Real-Time Latency Ledger:** Display live performance aggregates, active status logs, and mean response metrics synced dynamically via an inline countdown worker tracker.
 *   **Decoupled Auditing Registry:** Configure, update, and toggle active states of website, API, and ICMP endpoints dynamically with customizable scheduler frequencies.
-*   **Kuma-Style Health Timelines:** Visual status grids rendering a GitHub-style horizontal health block matrix showing log status, latency, and error states for the previous 50 audits.
-*   **Asynchronous Check Dispatcher:** Bypass cron schedules to trigger immediate, high-priority inspection jobs dispatched to background BullMQ workers.
-*   **System Engine Settings:** High-level diagnostic parameters dashboard showcasing timeouts, database record limits, and daemon runtime status.
+*   **SSL Certificates Validator:** Continuously monitors TLS certificate expiry states, tracking days remaining, validity windows, issuers, subjects, and signatures.
+*   **Port Scanner Sweeper:** Audits open TCP ports on targets, registering active socket routes and alerting on exposed services.
+*   **Incident Lifecycle Manager:** Automatically logs system downtime alerts (opened/resolved incidents) to track overall reliability and Mean Time to Repair (MTTR).
+*   **High-Resolution Analytics:** Calculates uptime ratios, average latencies, and peak latencies over configurable historical durations.
+*   **Interactive Visual Timelines:** Uses smooth Chart.js lines to plot historical latencies and custom status grids to represent check histories.
+
+---
+
+## 📸 System Screenshots
+
+### Real-Time Split Dashboard
+![Dashboard Layout](Docs/screenshots/dashboard.png)
+
+### Device Details & SSL Audits (Healthy)
+![Healthy Device details](Docs/screenshots/device_details_github.png)
+
+### Device Details & SSL Audits (Warning / Critical)
+![Warning Device details](Docs/screenshots/device_details_google.png)
 
 ---
 
@@ -22,7 +37,6 @@ NetScope uses a decoupled architecture separating client rendering, request rout
 
 ```mermaid
 graph TD
-    %% Frontend to Backend
     subgraph Client Layer [Frontend Client]
         ReactApp[React 19 + Tailwind v4 Client]
     end
@@ -41,9 +55,10 @@ graph TD
         Scheduler[Node-Cron Scheduler]
         BullMQ[BullMQ Queue Manager]
         Worker[Health Check Worker]
+        SSLWorker[SSL Cert Worker]
+        PortWorker[Port Scan Worker]
     end
 
-    %% Flow lines
     ReactApp -->|HTTP Requests / REST| ExpressAPI
     ExpressAPI -->|Read/Write Queries| PrismaClient
     PrismaClient -->|Persist Data| Postgres
@@ -52,9 +67,12 @@ graph TD
     Scheduler -->|Cron Poll every 1m| ExpressAPI
     Scheduler -->|Push Cron Jobs| BullMQ
     BullMQ <--->|Job Coordination| Redis
-    Worker -->|Fetch Jobs| BullMQ
-    Worker -->|Execute Ping / HTTP GET| ExternalHost[Monitored Targets Website / API / IP]
+    Worker -->|Execute Ping / HTTP GET| ExternalHost[Monitored Targets]
+    SSLWorker -->|Scan TLS Certificates| ExternalHost
+    PortWorker -->|Audit TCP Sockets| ExternalHost
     Worker -->|Save Results| PrismaClient
+    SSLWorker -->|Save Results| PrismaClient
+    PortWorker -->|Save Results| PrismaClient
 ```
 
 ---
@@ -65,7 +83,8 @@ graph TD
 | :--- | :--- | :--- |
 | **Frontend** | React 19, Vite | Fast, responsive single-page client interface |
 | | Tailwind CSS v4 | Curated dark mode gradients and micro-animations |
-| | Lucide React | High-quality responsive modern vector iconography |
+| | Chart.js, React-Chartjs-2 | High-performance HTML5 canvas performance logging charts |
+| | Lucide React | High-quality responsive vector icons |
 | **Backend** | Node.js, Express | REST API server handling configuration CRUD |
 | | Prisma ORM | Object-Relational mapping for database schemas |
 | | BullMQ | Redis-backed asynchronous queue for worker tasks |
@@ -83,6 +102,9 @@ The relational database model on PostgreSQL consists of four primary models mana
 erDiagram
     USER ||--o{ DEVICE : "owns"
     DEVICE ||--o{ HEALTH_LOG : "has"
+    DEVICE ||--o{ SSL_STATUS : "validates"
+    DEVICE ||--o{ PORT_SCAN_LOG : "audits"
+    DEVICE ||--o{ INCIDENT : "registers"
     USER ||--o{ ACTIVITY_LOG : "logs"
 
     USER {
@@ -115,20 +137,74 @@ erDiagram
         datetime checkedAt
     }
 
-    ACTIVITY_LOG {
+    SSL_STATUS {
         string id PK
-        string userId FK
-        enum action "LOGIN | LOGOUT | CREATE | UPDATE | DELETE"
-        string entityId
-        datetime createdAt
+        string deviceId FK
+        string issuer
+        string subject
+        datetime validFrom
+        datetime validTo
+        int daysRemaining
+        string fingerprint
+        enum status "VALID | EXPIRING | EXPIRED | INVALID"
+        datetime checkedAt
+    }
+
+    PORT_SCAN_LOG {
+        string id PK
+        string deviceId FK
+        int_array openPorts
+        datetime checkedAt
+    }
+
+    INCIDENT {
+        string id PK
+        string deviceId FK
+        string type
+        string status "OPEN | RESOLVED"
+        string error
+        datetime openedAt
+        datetime resolvedAt
     }
 ```
 
 ---
 
-## ⚙️ How to Run
+## 🔌 API Documentation
 
-You can run the NetScope stack either using **Docker Compose** (recommended for simplicity) or as **Local Services**.
+All REST routes are prefixed with `/api/v1`.
+
+### 1. Devices Registry
+*   `GET /devices` - Retrieve all registered devices.
+*   `GET /devices/:id` - Retrieve configuration for a single device.
+*   `POST /devices` - Register a new device.
+*   `PUT /devices/:id` - Update device details.
+*   `DELETE /devices/:id` - Delete device and wipe its historical log tables.
+
+### 2. Dashboard Analytics
+*   `GET /dashboard/summary` - Aggregate metrics (Total, Online, Offline, Avg Latency).
+*   `GET /dashboard/devices` - Current statuses of all monitored hosts.
+
+### 3. Latency Sweeps (Health Logs)
+*   `GET /health/:deviceId` - Retrieve the recent 50 check logs.
+*   `POST /health/check/:deviceId` - Dispatch an immediate manual health sweep job.
+
+### 4. SSL Certificates
+*   `GET /ssl` - List current certificate status maps for all devices.
+*   `GET /ssl/:deviceId` - Historical certificates validation logs.
+*   `POST /ssl/check/:deviceId` - Dispatch an immediate manual TLS certificate check job.
+
+### 5. Port Scanner
+*   `GET /ports` - List latest open ports registries for all devices.
+*   `GET /ports/:deviceId` - Historical port scan logs.
+*   `POST /ports/check/:deviceId` - Trigger an immediate TCP port scanner audit.
+
+### 6. Analytics Aggregates
+*   `GET /analytics/:deviceId` - Uptime percentages, mean latencies, and max latencies.
+
+---
+
+## ⚙️ How to Run
 
 ### Option A: Running with Docker Compose (Recommended)
 
@@ -142,11 +218,6 @@ You can run the NetScope stack either using **Docker Compose** (recommended for 
     ```bash
     docker-compose up -d --build
     ```
-    This command will automatically download, configure, build, and link:
-    *   `PostgreSQL` on port `5432`
-    *   `Redis` on port `6379`
-    *   `NetScope Backend` on port `5000`
-    *   `NetScope Frontend` on port `5173`
 
 3.  **Access the Dashboard:**
     Open [http://localhost:5173](http://localhost:5173) in your browser.
@@ -169,28 +240,28 @@ You can run the NetScope stack either using **Docker Compose** (recommended for 
     ```bash
     npm install
     ```
-3.  Configure `.env` environment variables (copy values from `.env.example` if available, or confirm credentials):
+3.  Configure `.env` environment variables:
     ```env
     DATABASE_URL="postgresql://postgres:postgres@localhost:5432/netscope?schema=public"
     REDIS_URL="redis://localhost:6379"
     PORT=5000
     NODE_ENV=development
     ```
-4.  Sync database schema and generate the Prisma Client:
+4.  Sync database schema:
     ```bash
     npx prisma db push
     ```
-5.  Seed the database with sample devices and health checks:
+5.  Seed database with demo configurations and logs:
     ```bash
     node prisma/seed.js
     ```
-6.  Start the backend API server and workers daemon:
+6.  Start backend API and workers daemon:
     ```bash
     npm run dev
     ```
 
 #### 2. Setup the Frontend
-1.  Open a new terminal and navigate to the `frontend` directory:
+1.  Navigate to the `frontend` directory:
     ```bash
     cd ../frontend
     ```
@@ -198,18 +269,8 @@ You can run the NetScope stack either using **Docker Compose** (recommended for 
     ```bash
     npm install
     ```
-3.  Launch the Vite development server:
+3.  Launch Vite development server:
     ```bash
     npm run dev
     ```
 4.  Open the application at [http://localhost:5173](http://localhost:5173).
-
----
-
-## 🔮 Future Roadmap (v2.0)
-
-*   [ ] **Authentication & Access Control:** Complete multi-user isolation and login screens.
-*   [ ] **SSL Certificate Expiry Tracking:** Pre-emptively warn users about expiring certificates.
-*   [ ] **Instant Notification Channels:** Integrate Discord webhooks, Slack bots, and Telegram alerts.
-*   [ ] **Advanced Analytics & Charts:** Custom timeline charts showing day-by-day response time histograms.
-*   [ ] **Port Scanner Integrations:** Monitor raw TCP sockets for database endpoints and SSH channels.
