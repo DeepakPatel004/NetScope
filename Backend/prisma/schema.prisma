@@ -68,6 +68,9 @@ model Device {
   updatedAt DateTime   @updatedAt
 
   healthLogs HealthLog[]
+  sslLogs   SSLStatus[]
+  portScanLogs PortScanLog[]
+  incidents Incident[] 
 
   @@index([userId])
   @@index([host])
@@ -109,4 +112,65 @@ model ActivityLog {
   createdAt  DateTime @default(now())
 
   @@index([userId])
+}
+
+enum CertificateStatus {
+  VALID
+  EXPIRING
+  EXPIRED
+  INVALID
+}
+
+model SSLStatus {
+  id            String            @id @default(uuid())
+
+  deviceId      String
+  device        Device            @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  issuer        String?
+  subject       String?
+  validFrom     DateTime?
+  validTo       DateTime?
+  daysRemaining Int?
+  serialNumber  String?
+  fingerprint   String?
+
+  status        CertificateStatus
+
+  checkedAt     DateTime          @default(now())
+
+  @@index([deviceId])
+  @@index([checkedAt])
+  @@index([deviceId, checkedAt])
+}
+
+model PortScanLog {
+  id          String   @id @default(uuid())
+  deviceId    String
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  openPorts   Int[]
+  checkedAt   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([checkedAt])
+  @@index([deviceId, checkedAt])
+}
+
+
+model Incident {
+  id          String      @id @default(uuid())
+
+  deviceId    String
+  device      Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  type        String      // "DOWNTIME" 
+  status      String      // "OPEN" or "RESOLVED"
+  
+  error       String?     // "Connection timeout"
+  
+  openedAt    DateTime    @default(now())
+  resolvedAt  DateTime?   
+
+  @@index([deviceId])
+  @@index([status])
 }
