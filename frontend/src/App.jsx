@@ -6,6 +6,11 @@ import AddDevice from './pages/AddDevice.jsx';
 import DeviceDetails from './pages/DeviceDetails.jsx';
 import Settings from './pages/Settings.jsx';
 
+import DeviceOverview from './pages/device-tabs/DeviceOverview.jsx';
+import DeviceSSL from './pages/device-tabs/DeviceSSL.jsx';
+import DevicePorts from './pages/device-tabs/DevicePorts.jsx';
+import DeviceLogs from './pages/device-tabs/DeviceLogs.jsx';
+
 function App() {
   return (
     <Router>
@@ -15,7 +20,14 @@ function App() {
           <Route path="/devices" element={<Devices />} />
           <Route path="/devices/new" element={<AddDevice />} />
           <Route path="/devices/edit/:id" element={<AddDevice />} />
-          <Route path="/devices/:id" element={<DeviceDetails />} />
+          
+          <Route path="/devices/:id" element={<DeviceDetails />}>
+            <Route index element={<DeviceOverview />} />
+            <Route path="ssl" element={<DeviceSSL />} />
+            <Route path="ports" element={<DevicePorts />} />
+            <Route path="logs" element={<DeviceLogs />} />
+          </Route>
+
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

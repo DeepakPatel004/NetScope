@@ -20,14 +20,20 @@ Built on top of a highly resilient asynchronous event loop, NetScope integrates 
 
 ## 📸 System Screenshots
 
-### Real-Time Split Dashboard
+### Real-Time Dashboard Catalog
 ![Dashboard Layout](Docs/screenshots/dashboard.png)
 
-### Device Details & SSL Audits (Healthy)
-![Healthy Device details](Docs/screenshots/device_details_github.png)
+### Device Details - Performance Overview (Latency Sweep Chart)
+![Overview details](Docs/screenshots/device_details_overview.png)
 
-### Device Details & SSL Audits (Warning / Critical)
-![Warning Device details](Docs/screenshots/device_details_google.png)
+### Device Details - SSL Security Diagnostics
+![SSL details](Docs/screenshots/device_details_ssl.png)
+
+### Device Details - Port Scanner Registry
+![Ports details](Docs/screenshots/device_details_ports.png)
+
+### Device Details - Recent Health Ledger
+![Logs details](Docs/screenshots/device_details_logs.png)
 
 ---
 

@@ -38,5 +38,15 @@ export const deviceService = {
   triggerManualCheck: async (id) => {
     const response = await api.post(`/health/check/${id}`);
     return response.data;
+  },
+
+  triggerSSLCheck: async (id) => {
+    const response = await api.post(`/ssl/check/${id}`);
+    return response.data;
+  },
+
+  triggerPortsCheck: async (id) => {
+    const response = await api.post(`/ports/check/${id}`);
+    return response.data;
   }
 };
