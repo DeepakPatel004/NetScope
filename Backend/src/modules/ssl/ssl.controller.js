@@ -2,14 +2,16 @@ import { PrismaClient } from '@prisma/client';
 import { sslService } from './ssl.service.js';
 
 const prisma = new PrismaClient();
-const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
 
 export const sslController = {
   async getAllSSL(req, res, next) {
     try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
       const devices = await prisma.device.findMany({
         where: { 
-          userId: MOCK_USER_ID,
+          userId,
           type: { not: 'IP' }
         },
         include: {
@@ -39,6 +41,19 @@ export const sslController = {
   async getDeviceSSL(req, res, next) {
     try {
       const { deviceId } = req.params;
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const device = await prisma.device.findFirst({
+        where: {
+          id: deviceId,
+          userId,
+        }
+      });
+
+      if (!device) {
+        return res.status(404).json({ success: false, message: 'Device not found' });
+      }
       
       const logs = await prisma.sSLStatus.findMany({
         where: { deviceId },
@@ -55,9 +70,14 @@ export const sslController = {
   async triggerCheck(req, res, next) {
     try {
       const { deviceId } = req.params;
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-      const device = await prisma.device.findUnique({
-        where: { id: deviceId }
+      const device = await prisma.device.findFirst({
+        where: {
+          id: deviceId,
+          userId,
+        },
       });
 
       if (!device) {
@@ -69,7 +89,8 @@ export const sslController = {
 
       return res.status(200).json({ success: true, data: savedLog });
     } catch (error) {
-      next(error);
+      console.error('SSL trigger error:', error.message || error);
+      return res.status(500).json({ success: false, message: error.message || 'Failed to trigger SSL check' });
     }
   }
 };

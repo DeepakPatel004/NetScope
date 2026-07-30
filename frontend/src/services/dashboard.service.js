@@ -14,5 +14,15 @@ export const dashboardService = {
   getDeviceDetails: async (id) => {
     const response = await api.get(`/dashboard/device/${id}`);
     return response.data;
+  },
+
+  downloadReportCsv: async () => {
+    const response = await api.get('/reports/csv', { responseType: 'blob' });
+    return response.data;
+  },
+
+  downloadReportPdf: async () => {
+    const response = await api.get('/reports/pdf', { responseType: 'blob' });
+    return response.data;
   }
 };

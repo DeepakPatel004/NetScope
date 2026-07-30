@@ -1,15 +1,13 @@
 import prisma from "../../config/database.js";
 
-const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
-
 export const deviceService = {
 
   // Create a new Device
-  async createDevice(deviceData) {
+  async createDevice(userId, deviceData) {
     return await prisma.device.create({
       data: {
         ...deviceData,
-        userId: MOCK_USER_ID,
+        userId,
       }
     });
   },

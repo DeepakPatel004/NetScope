@@ -1,12 +1,12 @@
 import { dashboardService } from './dashboard.service.js';
 
-// Global placeholder for local testing until auth middleware is built
-const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
-                      
 export const dashboardController = {
   async getSummary(req, res, next) {
     try {
-      const summary = await dashboardService.getSummary(MOCK_USER_ID);
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const summary = await dashboardService.getSummary(userId);
       return res.status(200).json({ success: true, data: summary });
     } catch (error) {
       next(error);
@@ -15,7 +15,10 @@ export const dashboardController = {
 
   async getDevicesStatus(req, res, next) {
     try {
-      const devices = await dashboardService.getDevicesStatus(MOCK_USER_ID);
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const devices = await dashboardService.getDevicesStatus(userId);
       return res.status(200).json({ success: true, data: devices });
     } catch (error) {
       next(error);

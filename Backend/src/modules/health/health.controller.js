@@ -2,20 +2,22 @@ import { healthService } from './health.service.js';
 import { deviceService } from '../device/device.service.js';
 import { healthQueue, QUEUE_NAMES } from '../../config/queue.js';
 
-// TEMP: Same mock user ID we used in the device module
-const MOCK_USER_ID = '11111111-1111-1111-1111-111111111111';
+// NOTE: This controller expects authentication middleware to set `req.user.id`
 
 export const healthController = {
   /**
    * Get the health history for a specific device
-   * GET /api/v1/health/:deviceId
+   * GET /api/v3/health/:deviceId
    */
   async getHistory(req, res, next) {
     try {
       const { deviceId } = req.params;
 
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
       // 1. Verify the device actually belongs to this user
-      const device = await deviceService.getDeviceById(MOCK_USER_ID, deviceId);
+      const device = await deviceService.getDeviceById(userId, deviceId);
       if (!device) {
         return res.status(404).json({ success: false, message: 'Device not found' });
       }
@@ -31,13 +33,16 @@ export const healthController = {
 
   /**
    * Manually trigger a check (Great for testing!)
-   * POST /api/v1/health/check/:deviceId
+   * POST /api/v3/health/check/:deviceId
    */
   async triggerManualCheck(req, res, next) {
     try {
       const { deviceId } = req.params;
 
-      const device = await deviceService.getDeviceById(MOCK_USER_ID, deviceId);
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const device = await deviceService.getDeviceById(userId, deviceId);
       if (!device) {
         return res.status(404).json({ success: false, message: 'Device not found' });
       }

@@ -2,12 +2,14 @@ import { tr } from "zod/v4/locales";
 import { deviceService} from "./device.service.js";
 import { deviceValidator } from "./device.validator.js";
 
-const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
 
 export const deviceController = {
     async createDevice(req, res, next) {
     try {
-      const device = await deviceService.createDevice(req.body);
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+        const device = await deviceService.createDevice(userId, req.body);
       return res.status(201).json({ success: true, data: device });
     } catch (error) {
       console.error(error);
@@ -18,7 +20,10 @@ export const deviceController = {
 
   async getDeviceById(req, res, next) {
     try {
-      const device = await deviceService.getDeviceById(MOCK_USER_ID, req.params.id);
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const device = await deviceService.getDeviceById(userId, req.params.id);
 
       if (!device) {
         return res.status(404).json({
@@ -38,7 +43,7 @@ export const deviceController = {
 
   /**
    * Update a device
-   * PUT /api/v1/devices/:id
+   * PUT /api/v3/devices/:id
    */
   async updateDevice(req, res, next) {
     try {
@@ -50,8 +55,11 @@ export const deviceController = {
         });
       }
 
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
       const updatedDevice = await deviceService.updateDevice(
-        MOCK_USER_ID,
+        userId,
         req.params.id,
         validation.data
       );
@@ -74,7 +82,10 @@ export const deviceController = {
   },
   async getDevices(req, res, next) {
     try {
-      const devices = await deviceService.getDevices(MOCK_USER_ID);
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const devices = await deviceService.getDevices(userId);
 
       return res.status(200).json({
         success: true,
@@ -87,11 +98,14 @@ export const deviceController = {
 
   /**
    * Delete a device
-   * DELETE /api/v1/devices/:id
+   * DELETE /api/v3/devices/:id
    */
   async deleteDevice(req, res, next) {
     try {
-      const deletedDevice = await deviceService.deleteDevice(MOCK_USER_ID, req.params.id);
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const deletedDevice = await deviceService.deleteDevice(userId, req.params.id);
 
       if (!deletedDevice) {
         return res.status(404).json({

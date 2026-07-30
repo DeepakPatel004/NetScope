@@ -6,6 +6,8 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import sslRoutes from './modules/ssl/ssl.routes.js';
 import portRoutes from './modules/port/port.routes.js';
 import analyticsRoutes from './modules/analytics/analytics.routes.js';
+import reportRoutes from './modules/report/report.routes.js';
+import authRoutes from './modules/auth/auth.routes.js';
 
 
 
@@ -23,17 +25,20 @@ app.get('/', (req, res) => {
   res.json({ message: 'NetScope API is running' });
 });
 
-app.use('/api/v1/devices', deviceRoutes); 
+app.use('/api/v3/devices', deviceRoutes); 
 
-app.use('/api/v1/health', healthRoutes);
+app.use('/api/v3/health', healthRoutes);
 
-app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v3/dashboard', dashboardRoutes);
 
-app.use('/api/v1/ssl', sslRoutes);
+app.use('/api/v3/ssl', sslRoutes);
 
-app.use('/api/v1/ports', portRoutes);
+app.use('/api/v3/ports', portRoutes);
 
-app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v3/reports', reportRoutes);
+
+app.use('/api/v3/analytics', analyticsRoutes);
+app.use('/api/v3/auth', authRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

@@ -178,7 +178,7 @@ erDiagram
 
 ## 🔌 API Documentation
 
-All REST routes are prefixed with `/api/v1`.
+All REST routes are prefixed with `/api/v3`.
 
 ### 1. Devices Registry
 *   `GET /devices` - Retrieve all registered devices.

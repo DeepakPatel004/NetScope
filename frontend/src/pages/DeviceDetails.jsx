@@ -86,7 +86,9 @@ export default function DeviceDetails() {
         setSslChecking(false);
       }, 1500);
     } catch (err) {
-      alert("Failed to trigger SSL check.");
+      console.error('SSL trigger failed:', err);
+      const message = err.response?.data?.message || err.message || 'Failed to trigger SSL check.';
+      alert(message);
       setSslChecking(false);
     }
   };
@@ -245,11 +247,12 @@ export default function DeviceDetails() {
               onChange={handleIntervalChange}
               className="bg-zinc-950 border border-zinc-800/80 text-zinc-300 rounded-lg text-xs font-mono py-1.5 px-3 focus:outline-none focus:border-indigo-500 transition-colors"
             >
-              <option value="1">1 Min</option>
-              <option value="5">5 Min</option>
-              <option value="15">15 Min</option>
-              <option value="30">30 Min</option>
-              <option value="60">60 Min</option>
+              <option value="30">30 Seconds</option>
+              <option value="60">1 Minute</option>
+              <option value="300">5 Minutes</option>
+              <option value="900">15 Minutes</option>
+              <option value="1800">30 Minutes</option>
+              <option value="3600">60 Minutes</option>
             </select>
           </div>
         </div>

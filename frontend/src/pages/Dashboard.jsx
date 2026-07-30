@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { dashboardService } from '../services/dashboard.service.js';
-import { Activity, Server, CheckCircle2, XCircle, RefreshCw, AlertCircle, Clock } from 'lucide-react';
+import { Activity, Server, CheckCircle2, XCircle, RefreshCw, AlertCircle, Clock, FileText, FileDown } from 'lucide-react';
 import DeviceTable from '../components/DeviceTable.jsx';
 
 export default function Dashboard() {
@@ -22,6 +22,37 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, []);
+
+  const downloadBlob = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadCsv = async () => {
+    try {
+      const blob = await dashboardService.downloadReportCsv();
+      downloadBlob(blob, 'netscope-report.csv');
+    } catch (err) {
+      console.error('Failed to download CSV report', err);
+      alert('Unable to download CSV report.');
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      const blob = await dashboardService.downloadReportPdf();
+      downloadBlob(blob, 'netscope-report.pdf');
+    } catch (err) {
+      console.error('Failed to download PDF report', err);
+      alert('Unable to download PDF report.');
+    }
+  };
 
   // Fetch summary metrics on mount or manual refresh trigger
   useEffect(() => {
@@ -62,14 +93,12 @@ export default function Dashboard() {
             <p className="text-sm text-slate-400 mt-1">Real-time status monitoring logs and host metrics.</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Auto refresh status bar */}
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs font-semibold text-slate-400">
               <Clock size={14} className="text-indigo-400 animate-spin-slow" />
               <span>Next scan in <span className="text-indigo-400 font-bold">{countdown}s</span></span>
             </div>
 
-            {/* Manual Sync */}
             <button
               onClick={handleManualRefresh}
               disabled={loading}
@@ -77,6 +106,22 @@ export default function Dashboard() {
             >
               <RefreshCw size={14} className={loading ? 'animate-spin text-indigo-400' : 'text-slate-400'} />
               Sync Data
+            </button>
+
+            <button
+              onClick={handleDownloadCsv}
+              className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-slate-800 text-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
+            >
+              <FileText size={14} className="text-slate-400" />
+              Export CSV
+            </button>
+
+            <button
+              onClick={handleDownloadPdf}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
+            >
+              <FileDown size={14} className="text-white" />
+              Export PDF
             </button>
           </div>
         </div>

@@ -1,96 +1,108 @@
 import React from 'react';
-import { Settings as SettingsIcon, Clock, ShieldAlert, Database, HelpCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Clock, ShieldAlert, Database, HelpCircle, Bell, Layers, Sparkles } from 'lucide-react';
 
 export default function Settings() {
   return (
-    <div className="p-8 bg-slate-950 min-h-screen text-slate-100">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
-            <SettingsIcon size={28} />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-              System Settings
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">Configure and view system monitor defaults.</p>
-          </div>
-        </div>
-
-        {/* Info Alert Box */}
-        <div className="bg-slate-900/60 border border-indigo-500/30 rounded-xl p-4 mb-8 flex gap-3 items-start">
-          <HelpCircle className="text-indigo-400 shrink-0 mt-0.5" size={20} />
-          <div>
-            <h4 className="text-sm font-semibold text-slate-200">System-Wide Defaults (Version 1)</h4>
-            <p className="text-xs text-slate-400 mt-1">
-              For NetScope v1.0, settings are system-wide defaults managed by the background engine. User-configurable custom scheduling rules will become available in the next version update.
-            </p>
-          </div>
-        </div>
-
-        {/* Settings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Card 1: Interval */}
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md flex flex-col justify-between">
-            <div>
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl w-fit mb-4">
-                <Clock size={22} />
+    <div className="min-h-screen bg-slate-950 text-slate-100 px-4 py-8">
+      <div className="max-w-7xl mx-auto space-y-10">
+        <div className="rounded-[30px] border border-slate-800/80 bg-slate-900/80 p-8 shadow-[0_40px_120px_rgba(15,23,42,0.25)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-3 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-200">
+                <SettingsIcon size={18} className="text-indigo-300" />
+                System Settings · NetScope v3
               </div>
-              <h3 className="text-base font-bold text-slate-200">Monitoring Interval</h3>
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                Frequency at which background workers test host health.
+              <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-white">
+                Global monitoring defaults for your network.
+              </h1>
+              <p className="mt-4 max-w-2xl text-slate-400 leading-7 text-xs">
+                Manage NetScope platform-wide defaults for polling, alerting, and data retention. These settings apply to all devices and will be extended with custom user-level controls in future releases.
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-800/60 flex items-baseline justify-between">
-              <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Default</span>
-              <span className="text-2xl font-bold text-slate-100">1 Minute</span>
-            </div>
-          </div>
-
-          {/* Card 2: Timeout */}
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md flex flex-col justify-between">
-            <div>
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl w-fit mb-4">
-                <ShieldAlert size={22} />
+            <div className="grid gap-3 sm:grid-cols-2 lg:w-auto">
+              <div className="rounded-3xl border border-slate-800/80 bg-slate-950/70 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Release</p>
+                <p className="mt-2 font-semibold text-white">v3.0.0</p>
               </div>
-              <h3 className="text-base font-bold text-slate-200">Request Timeout</h3>
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                Maximum time allowed for a service response before flagging DOWN status.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800/60 flex items-baseline justify-between">
-              <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Default</span>
-              <span className="text-2xl font-bold text-slate-100">5 Seconds</span>
-            </div>
-          </div>
-
-          {/* Card 3: Limit */}
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md flex flex-col justify-between">
-            <div>
-              <div className="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl w-fit mb-4">
-                <Database size={22} />
+              <div className="rounded-3xl border border-slate-800/80 bg-slate-950/70 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Mode</p>
+                <p className="mt-2 font-semibold text-white">System-wide defaults</p>
               </div>
-              <h3 className="text-base font-bold text-slate-200">History Limit</h3>
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                Maximum quantity of previous check logs retained per monitored device.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800/60 flex items-baseline justify-between">
-              <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Default</span>
-              <span className="text-2xl font-bold text-slate-100">50 Checks</span>
             </div>
           </div>
         </div>
 
-        {/* Version Info */}
-        <div className="bg-slate-900/20 border border-slate-850 rounded-2xl p-6 flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-semibold text-slate-350">NetScope Platform Version</h4>
-            <p className="text-xs text-slate-500 mt-0.5">Running open-source daemon services.</p>
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-sm">
+              <div className="flex items-center gap-3 text-slate-100 mb-4">
+                <HelpCircle size={20} className="text-indigo-300" />
+                <h2 className="text-base font-semibold">About this page</h2>
+              </div>
+              <p className="text-xs leading-6 text-slate-400">
+                These settings control how NetScope monitors hosts and reports status across your entire account. For now, defaults are engine-level, but we are preparing more granular per-device and per-user preferences soon.
+              </p>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6">
+                <div className="inline-flex items-center justify-center rounded-2xl bg-emerald-500/10 p-3 text-emerald-300 mb-4">
+                  <Clock size={20} />
+                </div>
+                <h3 className="font-semibold text-slate-200">Monitoring interval</h3>
+                <p className="mt-2 text-xs text-slate-400 leading-5">
+                  How often NetScope checks each registered host for health and latency.
+                </p>
+                <div className="mt-6 flex items-center justify-between rounded-3xl bg-slate-950/80 border border-slate-800 px-4 py-3 text-xs text-slate-300">
+                  <span>Default</span>
+                  <span className="font-semibold text-white">1 minute</span>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6">
+                <div className="inline-flex items-center justify-center rounded-2xl bg-amber-500/10 p-3 text-amber-300 mb-4">
+                  <ShieldAlert size={20} />
+                </div>
+                <h3 className="font-semibold text-slate-200">Timeout threshold</h3>
+                <p className="mt-2 text-xs text-slate-400 leading-5">
+                  Server response timeout before a check is marked as failed.
+                </p>
+                <div className="mt-6 flex items-center justify-between rounded-3xl bg-slate-950/80 border border-slate-800 px-4 py-3 text-xs text-slate-300">
+                  <span>Default</span>
+                  <span className="font-semibold text-white">5 seconds</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="px-3 py-1 bg-slate-800/80 border border-slate-700/50 rounded-lg text-xs font-bold text-slate-300">
-            v1.0.0-release
+
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6">
+              <div className="flex items-center gap-3 text-slate-100 mb-4">
+                <Layers size={20} className="text-cyan-300" />
+                <h2 className="text-base font-semibold">Retention and reporting</h2>
+              </div>
+              <p className="text-xs leading-6 text-slate-400">
+                Data retention settings determine how much history is stored for checks, SSL inspections, and port scans. This is useful for troubleshooting and compliance.
+              </p>
+              <div className="mt-6 grid gap-4">
+                <div className="rounded-3xl bg-slate-950/80 border border-slate-800 px-4 py-4 text-xs text-slate-300">
+                  <div className="flex items-center justify-between">
+                    <span>History limit</span>
+                    <span className="font-semibold text-white">50 checks</span>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">Recent monitoring results kept per device.</p>
+                </div>
+                <div className="rounded-3xl bg-slate-950/80 border border-slate-800 px-4 py-4 text-xs text-slate-300">
+                  <div className="flex items-center justify-between">
+                    <span>SSL alerts</span>
+                    <span className="font-semibold text-white">Enabled</span>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">Certificate expiry warnings are active for all devices.</p>
+                </div>
+              </div>
+            </div>
+
+            
           </div>
         </div>
       </div>

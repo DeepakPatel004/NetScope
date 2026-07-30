@@ -1,7 +1,5 @@
 import { api } from './api.js';
 
-const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
-
 export const deviceService = {
   // Get all devices
   getDevices: async () => {
@@ -17,8 +15,7 @@ export const deviceService = {
 
   // Create a device
   createDevice: async (deviceData) => {
-    const payload = { ...deviceData, userId: MOCK_USER_ID };
-    const response = await api.post('/devices', payload);
+    const response = await api.post('/devices', deviceData);
     return response.data;
   },
 

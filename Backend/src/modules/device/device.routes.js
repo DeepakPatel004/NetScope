@@ -1,26 +1,27 @@
 import express from 'express'
 import { deviceController } from './device.controller.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 // Create a device
-// POST /api/v1/devices
-router.post('/', deviceController.createDevice);
+// POST /api/v3/devices
+router.post('/', requireAuth, deviceController.createDevice);
 
 // Get all devices
-// GET /api/v1/devices
-router.get('/', deviceController.getDevices);
+// GET /api/v3/devices
+router.get('/', requireAuth, deviceController.getDevices);
 
 // Get a single device
-// GET /api/v1/devices/:id
-router.get('/:id', deviceController.getDeviceById);
+// GET /api/v3/devices/:id
+router.get('/:id', requireAuth, deviceController.getDeviceById);
 
 // Update a device
-// PUT /api/v1/devices/:id
-router.put('/:id', deviceController.updateDevice);
+// PUT /api/v3/devices/:id
+router.put('/:id', requireAuth, deviceController.updateDevice);
 
 // Delete a device
-// DELETE /api/v1/devices/:id
-router.delete('/:id', deviceController.deleteDevice);
+// DELETE /api/v3/devices/:id
+router.delete('/:id', requireAuth, deviceController.deleteDevice);
 
 export default router;

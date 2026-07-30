@@ -11,16 +11,30 @@ async function main() {
   await prisma.device.deleteMany({});
   console.log('🧹 Cleared old database records.');
 
-  // 2. Define realistic demo devices
+  // 2. Define realistic demo devices using resolvable local hosts
   const demoDevices = [
-    { name: 'Primary API Server', host: 'api.netscope.io', type: 'API', interval: 60 },
-    { name: 'Customer Payment Gateway', host: 'pay.stripe-api.com', type: 'API', interval: 30 },
-    { name: 'Marketing Website', host: 'www.netscope.io', type: 'WEBSITE', interval: 300 },
-    { name: 'Europe Database Replica', host: 'eu-west.db.aws.com', type: 'IP', interval: 60 },
-    { name: 'Background Worker', host: 'worker-1.internal', type: 'IP', interval: 60 },
+    { name: 'Primary API Server', host: 'example.com', type: 'API', interval: 60 },
+    { name: 'Customer Payment Gateway', host: 'example.org', type: 'API', interval: 30 },
+    { name: 'Marketing Website', host: 'example.net', type: 'WEBSITE', interval: 300 },
+    { name: 'Europe Database Replica', host: '127.0.0.1', type: 'IP', interval: 60 },
+    { name: 'Background Worker', host: 'localhost', type: 'IP', interval: 60 },
   ];
 
   // 3. Insert devices and generate historical logs
+  // Ensure a demo user exists for seeded devices
+  await prisma.user.upsert({
+    where: { id: MOCK_USER_ID },
+    update: {},
+    create: {
+      id: MOCK_USER_ID,
+      username: 'demo',
+      email: 'demo@netscope.local',
+      passwordHash: '',
+      fullName: 'Demo User',
+      role: 'USER'
+    }
+  });
+
   for (const dev of demoDevices) {
     const device = await prisma.device.create({
       data: {

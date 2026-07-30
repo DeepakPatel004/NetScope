@@ -2,8 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { portService } from './port.service.js';
 
 const prisma = new PrismaClient();
-// Global placeholder for local testing
-const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
+// This controller expects authentication middleware to set `req.user.id`
 
 export const portController = {
   /**
@@ -11,8 +10,11 @@ export const portController = {
    */
   async getAllPorts(req, res, next) {
     try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
       const devices = await prisma.device.findMany({
-        where: { userId: MOCK_USER_ID },
+        where: { userId },
         include: {
           portScanLogs: {
             orderBy: { checkedAt: 'desc' },

@@ -191,10 +191,7 @@ export default function DeviceOverview() {
               <span className="text-zinc-500">Registered On:</span>
               <span className="font-semibold text-zinc-300">{formatDate(device.createdAt)}</span>
             </div>
-            <div className="pt-1">
-              <span className="text-zinc-500 block mb-1">Audit Identifier (UUID):</span>
-              <span className="font-semibold text-zinc-400 text-[10px] break-all select-all block bg-zinc-950 p-2 rounded-lg border border-zinc-800/55">{device.id}</span>
-            </div>
+            {/* Audit Identifier removed for privacy */}
           </div>
         </div>
 
