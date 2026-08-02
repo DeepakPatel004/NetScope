@@ -92,6 +92,10 @@ model HealthLog {
   status         HealthStatus
 
   latency        Int?
+  dnsTime        Int?          @default(0)
+  tcpTime        Int?          @default(0)
+  tlsTime        Int?          @default(0)
+  ttfbTime       Int?          @default(0)
 
   responseCode   Int?
 

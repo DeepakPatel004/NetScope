@@ -18,6 +18,7 @@ Engineered with a **decoupled asynchronous architecture**, NetScope orchestrates
 ## 🌟 Key Engineering & Architectural Highlights
 
 - ⚡ **Asynchronous Distributed Auditing Pipeline:** Non-blocking background worker daemons decoupled from the main HTTP API server, processing concurrent network ping, port scan, and SSL verification jobs without blocking client request threads.
+- ⏱️ **Granular Network Phase Latency Breakdown (OSI Layer Diagnostics):** Measures and records precise per-phase network timings (DNS lookup time, TCP socket connect handshake, TLS negotiation, and Time to First Byte - TTFB) for every HTTP/HTTPS health sweep.
 - 🤖 **AI-Driven Intelligent Diagnostics & Root Cause Analysis:** Integrated Google Gemini LLM prompting engine (`Backend/src/modules/ai`) that synthesizes health telemetry, error trends, and open port registries to deliver natural-language incident explanations and remediation recommendations.
 - 🔐 **Enterprise Authentication & Session Security:** Complete JWT-based authentication system featuring short-lived access tokens, rotatable refresh token persistence (`RefreshToken` Prisma model), password hashing via `bcrypt`, user-scoped resource isolation, and detailed activity logs.
 - 📊 **Real-Time Interactive Telemetry Dashboard:** Responsive single-page client built with React 19, Vite, and Tailwind CSS v4, featuring dynamic Chart.js latency visualizer graphs, live countdown worker indicators, and real-time status badges.

@@ -176,6 +176,71 @@ export default function DeviceOverview() {
         </div>
       </div>
 
+      {/* Network Phase Latency Breakdown (OSI Layer Diagnostics) */}
+      {(() => {
+        const latestLog = healthHistory[0] || {};
+        const dnsTime = latestLog.dnsTime || 0;
+        const tcpTime = latestLog.tcpTime || 0;
+        const tlsTime = latestLog.tlsTime || 0;
+        const ttfbTime = latestLog.ttfbTime || 0;
+        const totalPhaseTime = Math.max(1, dnsTime + tcpTime + tlsTime + ttfbTime);
+
+        return (
+          <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <Settings size={16} className="text-emerald-400" />
+                <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest font-mono">
+                  Network Phase Latency Breakdown (OSI Layer Diagnostics)
+                </h3>
+              </div>
+              <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">
+                Latest Audit Sweep
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 font-mono">
+              <div className="bg-zinc-950/80 border border-zinc-800/60 p-3.5 rounded-xl">
+                <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">🌐 DNS Lookup</div>
+                <div className="text-xl font-bold text-zinc-100 mt-1">{dnsTime} <span className="text-xs text-zinc-500 font-normal">ms</span></div>
+                <div className="text-[10px] text-zinc-500 mt-1">Domain resolution</div>
+              </div>
+
+              <div className="bg-zinc-950/80 border border-zinc-800/60 p-3.5 rounded-xl">
+                <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">🤝 TCP Connect</div>
+                <div className="text-xl font-bold text-zinc-100 mt-1">{tcpTime} <span className="text-xs text-zinc-500 font-normal">ms</span></div>
+                <div className="text-[10px] text-zinc-500 mt-1">Socket handshake</div>
+              </div>
+
+              <div className="bg-zinc-950/80 border border-zinc-800/60 p-3.5 rounded-xl">
+                <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">🔒 TLS Handshake</div>
+                <div className="text-xl font-bold text-zinc-100 mt-1">{tlsTime} <span className="text-xs text-zinc-500 font-normal">ms</span></div>
+                <div className="text-[10px] text-zinc-500 mt-1">SSL/TLS negotiation</div>
+              </div>
+
+              <div className="bg-zinc-950/80 border border-zinc-800/60 p-3.5 rounded-xl">
+                <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">⚡ TTFB</div>
+                <div className="text-xl font-bold text-zinc-100 mt-1">{ttfbTime} <span className="text-xs text-zinc-500 font-normal">ms</span></div>
+                <div className="text-[10px] text-zinc-500 mt-1">First byte response</div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 font-mono text-[10px]">
+              <div className="flex justify-between text-zinc-400">
+                <span>Phase Latency Distribution</span>
+                <span>Total Latency: {latestLog.latency || 0} ms</span>
+              </div>
+              <div className="w-full h-3 bg-zinc-950 rounded-full overflow-hidden flex border border-zinc-800/80">
+                <div style={{ width: `${Math.min(100, Math.max(5, (dnsTime / totalPhaseTime) * 100))}%` }} className="bg-indigo-500 h-full" title={`DNS: ${dnsTime}ms`} />
+                <div style={{ width: `${Math.min(100, Math.max(5, (tcpTime / totalPhaseTime) * 100))}%` }} className="bg-amber-500 h-full" title={`TCP: ${tcpTime}ms`} />
+                <div style={{ width: `${Math.min(100, Math.max(5, (tlsTime / totalPhaseTime) * 100))}%` }} className="bg-cyan-500 h-full" title={`TLS: ${tlsTime}ms`} />
+                <div style={{ width: `${Math.min(100, Math.max(5, (ttfbTime / totalPhaseTime) * 100))}%` }} className="bg-emerald-500 h-full" title={`TTFB: ${ttfbTime}ms`} />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-4">

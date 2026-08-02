@@ -49,37 +49,16 @@ function normalizeAiContent(text) {
   let normalized = text
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
     .replace(/\*\*/g, '')
+    .replace(/(?:and\s+)?Formatting:\s*\*?\s*Make it sound.*$/gi, '')
+    .replace(/Instructions?:.*$/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  normalized = normalized.replace(/^[:)*\s]+/i, '');
+  normalized = normalized.replace(/^[:)*\s#]+/i, '');
   normalized = normalized.replace(/[:)*\s]+$/i, '');
-  normalized = normalized.replace(/^great news!\s+/i, '');
-  normalized = normalized.replace(/^#{1,6}\s*/g, '');
-  normalized = normalized.replace(/\b(?:review the certificate validity dates\.?|renew the certificate before it expires if the status is expiring or expired\.?|check the latest health logs for repeated errors\.?|confirm network connectivity and dns settings\.?|choose a device and pick one of the guided topics below for a practical, domain-specific answer\.?|i can help with a few guided topics\.?.*?overview\.?)+/gi, '');
-  normalized = normalized.replace(/\s+/g, ' ').trim();
+  normalized = normalized.replace(/^great news!\s*/i, '');
 
-  if (!normalized) {
-    return '';
-  }
-
-  const sentences = normalized
-    .split(/(?<=[.!?])\s+/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean)
-    .filter((sentence) => !/^(?:check|confirm|review|renew|choose|i can help|health:|ssl:|ports:)/i.test(sentence));
-
-  if (sentences.length > 0) {
-    const firstSentence = sentences.find((sentence) => !/^(?:the system is currently|your system is currently)/i.test(sentence));
-    const kept = firstSentence || sentences[0];
-    const cleaned = kept.replace(/\s+/g, ' ').trim();
-    if (isIncompleteAiFragment(cleaned)) {
-      return '';
-    }
-    return cleaned;
-  }
-
-  return normalized;
+  return normalized.trim();
 }
 
 async function callAiModel(prompt) {
@@ -127,7 +106,7 @@ async function callAiModel(prompt) {
           ],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 400,
+            maxOutputTokens: 1000,
           },
         }),
         signal: controller.signal,
@@ -162,13 +141,18 @@ async function generateInsight(kind, payload, fallback, promptText = '') {
 
     if (aiResult?.content) {
       const cleanedSummary = normalizeAiContent(aiResult.content);
-      return buildResponse(kind, {
-        summary: cleanedSummary || fallback.summary,
-        recommendations: fallback.recommendations,
-      }, fallback);
+      if (cleanedSummary && !isIncompleteAiFragment(cleanedSummary)) {
+        return buildResponse(kind, {
+          summary: cleanedSummary,
+          recommendations: fallback.recommendations,
+        }, fallback);
+      }
     }
 
-    return buildUnavailableAiResponse(fallback);
+    return buildResponse(kind, {
+      summary: fallback.summary,
+      recommendations: fallback.recommendations,
+    }, fallback);
   } catch (error) {
     console.error('AI insight generation failed', error);
     return buildUnavailableAiResponse(fallback);

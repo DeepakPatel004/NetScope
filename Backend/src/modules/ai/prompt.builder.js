@@ -58,18 +58,18 @@ function getPromptIntent(promptText = '') {
 export function buildInsightPrompt(kind, data, promptText = '') {
   const userPrompt = (promptText || '').trim();
   const promptContext = userPrompt ? `\nUser question: ${userPrompt}` : '';
+  const strictOutputRule = '\nIMPORTANT: Provide ONLY the direct, natural answer to the user. Do NOT repeat these instructions, headers, or metadata labels.';
 
   if (kind === 'ssl') {
     return `
-You are helping a non-technical user understand a monitoring result.
-Explain the SSL status in simple English and make it feel conversational.
-Mention what SSL is, whether the certificate looks healthy, and whether the user should take action.
-Keep the answer short, practical, and specific to the current data.
-Avoid sounding like a template. Lead with the most important finding first.
-Use the user question as context and adapt the wording.
+You are an expert systems engineer explaining SSL status to a user.
+Explain the SSL status in simple, natural English.
+Mention what SSL is, whether the certificate looks healthy, and if action is needed.
+Keep the response concise (2-3 sentences), practical, and specific to the telemetry data below.
+${strictOutputRule}
 ${promptContext}
 
-Latest SSL data:
+Latest SSL telemetry:
 - issuer: ${data?.ssl?.issuer || 'unknown'}
 - subject: ${data?.ssl?.subject || 'unknown'}
 - status: ${data?.ssl?.status || 'unknown'}
@@ -80,13 +80,14 @@ Latest SSL data:
 
   if (kind === 'ports') {
     return `
-Explain the port scan results for a beginner in clear, everyday language.
-Describe what each open port is commonly used for and mention simple security concerns.
-Be specific to the actual open ports and avoid generic wording.
-Mention whether the exposure looks low, medium, or high based on the ports that are open.
+You are an expert security engineer explaining port scan results to a user.
+Explain the port scan results in clear, natural language.
+Describe what each open port is commonly used for and mention any security notes.
+Be specific to the actual open ports and avoid generic template text.
+${strictOutputRule}
 ${promptContext}
 
-Port scan data:
+Port scan telemetry:
 - openPorts: ${formatPortList(data?.portScan?.openPorts || [])}
 - checkedAt: ${data?.portScan?.checkedAt || 'unknown'}
 `;
@@ -94,12 +95,11 @@ Port scan data:
 
   if (kind === 'health') {
     return `
-Answer the user's health question directly using the provided logs only.
-Start with the most important finding, then explain it in one short paragraph.
-Mention whether the service is currently healthy or degraded, and if there are errors, explain them in simple terms.
-Do not start with generic phrases like "Here is a plain-English breakdown" or "I can help".
-Do not add filler or repeat the same opening phrase.
-Use the user's question as context and keep the answer concise but specific.
+You are an infrastructure monitoring expert answering a system health question.
+Answer the user's question directly based strictly on the provided telemetry logs.
+Start with the primary health finding, followed by a concise 1-2 sentence explanation.
+Mention whether the service is currently healthy or degraded, and explain any errors simply.
+${strictOutputRule}
 ${promptContext}
 
 Recent health logs:
@@ -109,12 +109,13 @@ ${formatLogs(data?.healthLogs || [])}
 
   if (kind === 'device') {
     return `
-Summarize the device monitoring status for a non-technical user using the provided data only.
-Mention whether the service looks healthy, note any SSL or port concerns, and suggest a few practical improvements if needed.
-Be natural, concise, and specific to the current findings. Avoid repeating the same opening phrase every time.
+You are a DevOps monitoring engineer providing a complete device summary.
+Summarize the device monitoring status concisely using the provided telemetry data.
+Mention whether the service is healthy, note any SSL or open port security concerns, and give actionable recommendations.
+${strictOutputRule}
 ${promptContext}
 
-Monitoring data:
+Monitoring telemetry:
 - healthMetrics: ${JSON.stringify(data?.metrics || {}, null, 2)}
 - sslStatus: ${data?.ssl?.status || 'unknown'}
 - sslDaysRemaining: ${data?.ssl?.daysRemaining ?? 'unknown'}
@@ -127,12 +128,12 @@ ${formatLogs(data?.healthLogs || [])}
 
   if (kind === 'report') {
     return `
-Summarize this monitoring report in plain English.
-Highlight the most important observations and recommendations.
-Keep the explanation beginner-friendly and short, and focus on the biggest risks first.
+You are an SRE engineer summarizing an executive SLA monitoring report.
+Highlight the primary availability observations and security findings in 2-3 natural sentences.
+${strictOutputRule}
 ${promptContext}
 
-Report data:
+Report telemetry:
 - reportId: ${data?.reportId || 'unknown'}
 - totalDevices: ${data?.report?.summary?.totalDevices ?? 'unknown'}
 - overallUptime: ${data?.report?.summary?.overallUptime ?? 'unknown'}
@@ -143,7 +144,7 @@ Report data:
 `;
   }
 
-  return `Summarize this monitoring data in simple English. Keep it short and practical.\n\nData:\n${JSON.stringify(data, null, 2)}${promptContext}`;
+  return `Summarize this monitoring telemetry in simple, natural English.\n\nData:\n${JSON.stringify(data, null, 2)}${promptContext}`;
 }
 
 export function buildFallbackSummary(kind, data, promptText = '') {
