@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Server, Settings, Activity, Cpu, LogOut } from 'lucide-react';
+import { LayoutDashboard, Server, Settings, Activity, Cpu, LogOut, Sparkles } from 'lucide-react';
 import { authService } from '../../services/auth.service.js';
 
 export default function Sidebar() {
@@ -8,6 +8,7 @@ export default function Sidebar() {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Devices', path: '/devices', icon: Server },
+    { name: 'AI Assistant', path: '/ai', icon: Sparkles },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 

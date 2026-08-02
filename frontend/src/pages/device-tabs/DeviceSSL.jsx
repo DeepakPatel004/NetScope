@@ -47,7 +47,7 @@ export default function DeviceSSL() {
       </div>
 
       {sslInfo ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm mt-6">
           <div className="space-y-4">
             <div>
               <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">Subject Common Name (Domain)</div>

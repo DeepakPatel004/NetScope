@@ -14,6 +14,7 @@ import DeviceOverview from './pages/device-tabs/DeviceOverview.jsx';
 import DeviceSSL from './pages/device-tabs/DeviceSSL.jsx';
 import DevicePorts from './pages/device-tabs/DevicePorts.jsx';
 import DeviceLogs from './pages/device-tabs/DeviceLogs.jsx';
+import AIAssistantPage from './pages/AIAssistantPage.jsx';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/devices" element={<Devices />} />
           <Route path="/devices/new" element={<AddDevice />} />
           <Route path="/devices/edit/:id" element={<AddDevice />} />
+          <Route path="/ai" element={<AIAssistantPage />} />
           
           <Route path="/devices/:id" element={<DeviceDetails />}>
             <Route index element={<DeviceOverview />} />

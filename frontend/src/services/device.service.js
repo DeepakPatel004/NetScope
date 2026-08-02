@@ -45,5 +45,25 @@ export const deviceService = {
   triggerPortsCheck: async (id) => {
     const response = await api.post(`/ports/check/${id}`);
     return response.data;
+  },
+
+  explainHealth: async (id, prompt = '') => {
+    const response = await api.post(`/ai/explain/health/${id}`, { prompt });
+    return response.data;
+  },
+
+  explainSsl: async (id, prompt = '') => {
+    const response = await api.post(`/ai/explain/ssl/${id}`, { prompt });
+    return response.data;
+  },
+
+  explainPorts: async (id, prompt = '') => {
+    const response = await api.post(`/ai/explain/ports/${id}`, { prompt });
+    return response.data;
+  },
+
+  analyzeDevice: async (id, prompt = '') => {
+    const response = await api.post(`/ai/analyze/device/${id}`, { prompt });
+    return response.data;
   }
 };

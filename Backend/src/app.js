@@ -8,6 +8,7 @@ import portRoutes from './modules/port/port.routes.js';
 import analyticsRoutes from './modules/analytics/analytics.routes.js';
 import reportRoutes from './modules/report/report.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
+import aiRoutes from './modules/ai/ai.routes.js';
 
 
 
@@ -39,6 +40,7 @@ app.use('/api/v3/reports', reportRoutes);
 
 app.use('/api/v3/analytics', analyticsRoutes);
 app.use('/api/v3/auth', authRoutes);
+app.use('/api/v3/ai', aiRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
