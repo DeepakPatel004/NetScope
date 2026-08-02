@@ -38,10 +38,10 @@ export default function DeviceSSL() {
           <button
             onClick={handleManualSSLCheck}
             disabled={sslChecking}
-            className="flex items-center gap-1.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-300 disabled:opacity-50 px-3 py-1.5 rounded-xl text-xs font-mono transition-all"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-mono font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-lg shadow-indigo-600/25 border border-indigo-400/30 disabled:opacity-50 cursor-pointer"
           >
-            <Shield size={10} className="text-indigo-400" />
-            {sslChecking ? 'SCANNING...' : 'SCAN SSL'}
+            <Shield size={13} className={`text-white ${sslChecking ? 'animate-pulse' : ''}`} />
+            <span>{sslChecking ? 'SCANNING...' : 'SCAN SSL'}</span>
           </button>
         </div>
       </div>

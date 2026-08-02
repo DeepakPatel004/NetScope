@@ -213,17 +213,17 @@ export default function DeviceDetails() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Link
               to={`/devices/edit/${id}`}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-300 px-3.5 py-2 rounded-xl text-xs font-mono transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 hover:border-zinc-600 text-zinc-200 px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
             >
-              <Edit3 size={12} />
+              <Edit3 size={13} className="text-indigo-400" />
               EDIT SETUP
             </Link>
 
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 hover:bg-rose-950/20 border border-zinc-800/80 hover:border-rose-900/10 text-zinc-400 hover:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-mono transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-rose-950/30 hover:bg-rose-900/50 border border-rose-800/40 hover:border-rose-700/60 text-rose-300 hover:text-rose-100 px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
             >
-              <Trash2 size={12} />
+              <Trash2 size={13} className="text-rose-400" />
               DELETE
             </button>
           </div>
