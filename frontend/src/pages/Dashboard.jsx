@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { dashboardService } from '../services/dashboard.service.js';
+import { useToast } from '../context/ToastContext.jsx';
 import { Activity, Server, CheckCircle2, XCircle, RefreshCw, AlertCircle, Clock, FileText, FileDown } from 'lucide-react';
 import DeviceTable from '../components/DeviceTable.jsx';
 
 export default function Dashboard() {
+  const toast = useToast();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,9 +40,10 @@ export default function Dashboard() {
     try {
       const blob = await dashboardService.downloadReportCsv();
       downloadBlob(blob, 'netscope-report.csv');
+      toast.success('CSV Report exported successfully');
     } catch (err) {
       console.error('Failed to download CSV report', err);
-      alert('Unable to download CSV report.');
+      toast.error('Unable to download CSV report');
     }
   };
 
@@ -48,9 +51,10 @@ export default function Dashboard() {
     try {
       const blob = await dashboardService.downloadReportPdf();
       downloadBlob(blob, 'netscope-report.pdf');
+      toast.success('Executive PDF Report exported successfully');
     } catch (err) {
       console.error('Failed to download PDF report', err);
-      alert('Unable to download PDF report.');
+      toast.error('Unable to download PDF report');
     }
   };
 

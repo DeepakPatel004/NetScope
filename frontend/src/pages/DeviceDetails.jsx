@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate, NavLink, Outlet } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { deviceService } from '../services/device.service.js';
+import { useToast } from '../context/ToastContext.jsx';
 import {
   ArrowLeft, Shield, Activity, Terminal, Settings,
   Trash2, Edit3, Play, AlertCircle, X, ShieldAlert
@@ -10,6 +11,7 @@ import {
 export default function DeviceDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [device, setDevice] = useState(null);
   const [analytics, setAnalytics] = useState(null);
@@ -67,12 +69,13 @@ export default function DeviceDetails() {
     setChecking(true);
     try {
       await deviceService.triggerManualCheck(id);
+      toast.success("Health diagnostics sweep dispatched");
       setTimeout(async () => {
         await fetchData();
         setChecking(false);
       }, 1500);
     } catch (err) {
-      alert("Failed to queue health diagnostics.");
+      toast.error("Failed to queue health diagnostics");
       setChecking(false);
     }
   };
@@ -81,6 +84,7 @@ export default function DeviceDetails() {
     setSslChecking(true);
     try {
       await deviceService.triggerSSLCheck(id);
+      toast.success("TLS certificate audit dispatched");
       setTimeout(async () => {
         await fetchData();
         setSslChecking(false);
@@ -88,7 +92,7 @@ export default function DeviceDetails() {
     } catch (err) {
       console.error('SSL trigger failed:', err);
       const message = err.response?.data?.message || err.message || 'Failed to trigger SSL check.';
-      alert(message);
+      toast.error(message);
       setSslChecking(false);
     }
   };
@@ -97,12 +101,13 @@ export default function DeviceDetails() {
     setPortsChecking(true);
     try {
       await deviceService.triggerPortsCheck(id);
+      toast.success("TCP port scan audit dispatched");
       setTimeout(async () => {
         await fetchData();
         setPortsChecking(false);
       }, 1500);
     } catch (err) {
-      alert("Failed to trigger port scan.");
+      toast.error("Failed to trigger port scan");
       setPortsChecking(false);
     }
   };
@@ -112,8 +117,9 @@ export default function DeviceDetails() {
       const updatedEnabled = !device.enabled;
       await deviceService.updateDevice(id, { enabled: updatedEnabled });
       setDevice((prev) => ({ ...prev, enabled: updatedEnabled }));
+      toast.info(updatedEnabled ? "Active monitoring enabled" : "Active monitoring paused");
     } catch (err) {
-      alert("Failed to update active state.");
+      toast.error("Failed to update active state");
     }
   };
 
@@ -122,8 +128,9 @@ export default function DeviceDetails() {
       const newInterval = parseInt(e.target.value);
       await deviceService.updateDevice(id, { interval: newInterval });
       setDevice((prev) => ({ ...prev, interval: newInterval }));
+      toast.info(`Ping interval updated to ${newInterval} seconds`);
     } catch (err) {
-      alert("Failed to update ping interval.");
+      toast.error("Failed to update ping interval");
     }
   };
 
@@ -131,9 +138,10 @@ export default function DeviceDetails() {
     setDeleteLoading(true);
     try {
       await deviceService.deleteDevice(id);
+      toast.success("Device configuration removed");
       navigate('/devices');
     } catch (err) {
-      alert("Deletion request failed.");
+      toast.error("Deletion request failed");
       setDeleteLoading(false);
     }
   };

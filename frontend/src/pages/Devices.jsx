@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deviceService } from '../services/device.service.js';
 import { dashboardService } from '../services/dashboard.service.js';
+import { useToast } from '../context/ToastContext.jsx';
 import { 
   Plus, Globe, Shield, Terminal, Settings, Trash2, Eye, Edit3, 
   Play, Pause, AlertCircle, X, HelpCircle, Activity 
 } from 'lucide-react';
 
 export default function Devices() {
+  const toast = useToast();
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,11 +49,12 @@ export default function Devices() {
     setDeleteLoading(true);
     try {
       await deviceService.deleteDevice(deviceToDelete.id);
+      toast.success(`Device "${deviceToDelete.name}" removed successfully`);
       setDeviceToDelete(null);
       fetchDevicesData(); // Refresh list
     } catch (err) {
       console.error("Failed to delete device", err);
-      alert("Failed to delete device: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to delete device: " + (err.response?.data?.message || err.message));
     } finally {
       setDeleteLoading(false);
     }

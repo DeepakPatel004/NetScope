@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { deviceService } from '../services/device.service.js';
+import { useToast } from '../context/ToastContext.jsx';
 import { Save, ArrowLeft, Globe, Shield, Terminal, Settings, Info, Loader2 } from 'lucide-react';
 
 export default function AddDevice() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const isEditMode = !!id;
 
   const [loading, setLoading] = useState(false);
@@ -89,13 +91,17 @@ export default function AddDevice() {
     try {
       if (isEditMode) {
         await deviceService.updateDevice(id, payload);
+        toast.success(`Device "${formData.name}" updated successfully`);
       } else {
         await deviceService.createDevice(payload);
+        toast.success(`Device "${formData.name}" registered successfully`);
       }
       navigate('/devices'); // Return to Catalog
     } catch (err) {
       console.error("Submission failed", err);
-      setError(err.response?.data?.message || 'Failed to save device configuration.');
+      const msg = err.response?.data?.message || 'Failed to save device configuration.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
