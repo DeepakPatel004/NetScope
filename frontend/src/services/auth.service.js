@@ -38,6 +38,10 @@ export const authService = {
       const resp = await api.post('/auth/login', { email, password });
       const data = resp.data.data || resp.data;
       saveTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
+      const userData = data.user || { id: data.id, username: data.username, email: data.email, fullName: data.fullName, role: data.role };
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
       return data;
     } catch (err) {
       const message = normalizeError(err);

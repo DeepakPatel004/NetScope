@@ -15,6 +15,7 @@ import DeviceSSL from './pages/device-tabs/DeviceSSL.jsx';
 import DevicePorts from './pages/device-tabs/DevicePorts.jsx';
 import DeviceLogs from './pages/device-tabs/DeviceLogs.jsx';
 import AIAssistantPage from './pages/AIAssistantPage.jsx';
+import Documentation from './pages/Documentation.jsx';
 
 import { ToastProvider } from './context/ToastContext.jsx';
 
@@ -35,6 +36,7 @@ function App() {
             <Route path="/devices/new" element={<AddDevice />} />
             <Route path="/devices/edit/:id" element={<AddDevice />} />
             <Route path="/ai" element={<AIAssistantPage />} />
+            <Route path="/docs" element={<Documentation />} />
             
             <Route path="/devices/:id" element={<DeviceDetails />}>
               <Route index element={<DeviceOverview />} />

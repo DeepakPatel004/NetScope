@@ -116,6 +116,10 @@ graph TD
   - **Time to First Byte (`ttfbTime` in ms):** Time elapsed before receiving the initial HTTP response byte.
 - **Visual Telemetry UI:** Displays a live, per-phase latency breakdown card with proportional distribution bars on the device dashboard.
 
+### 7. 📖 Interactive Platform Documentation & Knowledge Base (`/docs`)
+- **Comprehensive User Guide:** Built-in documentation portal explaining network telemetry concepts, OSI latency phase diagnostics, SSL certificate lifecycles, open TCP port security risks, and AI assistant prompt workflows.
+- **Developer Quickstart Walkthrough:** Step-by-step guidance on registering endpoints, configuring cron sweep frequencies, analyzing performance logs, and exporting executive SLA reports.
+
 ---
 
 ## 📸 System Screenshots

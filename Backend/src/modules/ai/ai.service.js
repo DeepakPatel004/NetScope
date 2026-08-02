@@ -61,7 +61,7 @@ function normalizeAiContent(text) {
   return normalized.trim();
 }
 
-async function callAiModel(prompt) {
+async function callAiModel(prompt, retriesLeft = 1) {
   const enabled = process.env.AI_ENABLED !== 'false';
   const apiKey = process.env.AI_API_KEY?.trim();
 
@@ -74,64 +74,74 @@ async function callAiModel(prompt) {
   }
 
   const baseUrl = (process.env.AI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/models').trim();
-  const model = (process.env.AI_MODEL || 'gemini-flash-latest').trim();
-  const endpointUrl = baseUrl.includes(':generateContent')
-    ? baseUrl
-    : `${baseUrl.replace(/\/+$/, '')}/${encodeURIComponent(model)}:generateContent`;
+  const envModel = (process.env.AI_MODEL || 'gemini-1.5-flash').trim();
+  // Ensure we use official supported model names
+  const candidateModels = [envModel, 'gemini-1.5-flash', 'gemini-2.0-flash'].filter((v, i, a) => a.indexOf(v) === i);
 
-  const controller = new AbortController();
-  let timeoutId;
-  const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS || 8000);
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      controller.abort();
-      reject(new Error('timeout'));
-    }, Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 8000);
-  });
+  for (const model of candidateModels) {
+    const endpointUrl = baseUrl.includes(':generateContent')
+      ? baseUrl
+      : `${baseUrl.replace(/\/+$/, '')}/${encodeURIComponent(model)}:generateContent`;
 
-  try {
-    const response = await Promise.race([
-      fetch(endpointUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 2000,
+    const controller = new AbortController();
+    let timeoutId;
+    const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS || 10000);
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(new Error('timeout'));
+      }, Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 10000);
+    });
+
+    try {
+      const response = await Promise.race([
+        fetch(endpointUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': apiKey,
           },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 2000,
+            },
+          }),
+          signal: controller.signal,
         }),
-        signal: controller.signal,
-      }),
-      timeoutPromise,
-    ]);
+        timeoutPromise,
+      ]);
 
-    if (!response.ok) {
-      return { content: null, available: false, reason: `http-${response.status}` };
-    }
+      if (response.status === 429 && retriesLeft > 0) {
+        console.warn(`[Gemini API] 429 Rate Limit hit for ${model}. Retrying in 1.2s...`);
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        return callAiModel(prompt, retriesLeft - 1);
+      }
 
-    const data = await response.json();
-    const content = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    return { content: content || null, available: Boolean(content), reason: content ? 'ok' : 'empty-response' };
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      return { content: null, available: false, reason: 'timeout' };
-    }
+      if (!response.ok) {
+        console.warn(`[Gemini API] ${model} returned HTTP ${response.status}. Trying next model...`);
+        continue;
+      }
 
-    return { content: null, available: false, reason: 'request-failed' };
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+      const data = await response.json();
+      const content = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (content) {
+        return { content, available: true, reason: 'ok' };
+      }
+    } catch (error) {
+      console.warn(`[Gemini API] Failed request for ${model}: ${error.message}`);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
     }
   }
+
+  return { content: null, available: false, reason: 'all-models-failed' };
 }
 
 async function generateInsight(kind, payload, fallback, promptText = '') {
