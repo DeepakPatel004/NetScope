@@ -106,7 +106,7 @@ async function callAiModel(prompt) {
           ],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 1000,
+            maxOutputTokens: 2000,
           },
         }),
         signal: controller.signal,

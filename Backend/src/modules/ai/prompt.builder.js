@@ -58,7 +58,7 @@ function getPromptIntent(promptText = '') {
 export function buildInsightPrompt(kind, data, promptText = '') {
   const userPrompt = (promptText || '').trim();
   const promptContext = userPrompt ? `\nUser question: ${userPrompt}` : '';
-  const strictOutputRule = '\nIMPORTANT: Provide ONLY the direct, natural answer to the user. Do NOT repeat these instructions, headers, or metadata labels.';
+  const strictOutputRule = '\nIMPORTANT: Provide ONLY the direct, natural answer to the user. Keep your response concise (under 150 words) and fully complete. Do NOT use markdown section headers like "###" or leave unfinished sentences.';
 
   if (kind === 'ssl') {
     return `
@@ -110,8 +110,8 @@ ${formatLogs(data?.healthLogs || [])}
   if (kind === 'device') {
     return `
 You are a DevOps monitoring engineer providing a complete device summary.
-Summarize the device monitoring status concisely using the provided telemetry data.
-Mention whether the service is healthy, note any SSL or open port security concerns, and give actionable recommendations.
+Summarize the device status concisely in 2 short paragraphs based on the provided telemetry.
+Mention overall health status, SSL certificate validity, open port exposure notes, and key actionable next steps.
 ${strictOutputRule}
 ${promptContext}
 
