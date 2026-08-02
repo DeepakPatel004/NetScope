@@ -108,6 +108,14 @@ graph TD
 - **Reliability Metrics:** Calculates precise uptime percentages, average latency, peak latency, and Mean Time to Repair (MTTR).
 - **Executive Reporting:** Generates downloadable SLA compliance reports in PDF and CSV formats for executive summaries.
 
+### 6. ⏱️ Network Phase Latency Breakdown (OSI Layer Diagnostics)
+- **High-Precision Socket Timing:** Measures socket connection lifecycle events for every HTTP/HTTPS health check:
+  - **DNS Lookup Time (`dnsTime` in ms):** Domain name resolution latency.
+  - **TCP Connection Handshake (`tcpTime` in ms):** Socket connection establishment time.
+  - **TLS Handshake (`tlsTime` in ms):** SSL/TLS negotiation & security handshake duration.
+  - **Time to First Byte (`ttfbTime` in ms):** Time elapsed before receiving the initial HTTP response byte.
+- **Visual Telemetry UI:** Displays a live, per-phase latency breakdown card with proportional distribution bars on the device dashboard.
+
 ---
 
 ## 📸 System Screenshots
@@ -208,6 +216,10 @@ erDiagram
         string deviceId FK
         string status
         int latency
+        int dnsTime
+        int tcpTime
+        int tlsTime
+        int ttfbTime
         int responseCode
         string message
         datetime checkedAt
