@@ -32,12 +32,12 @@ NetScope enforces a clear separation of concerns across Client Rendering, REST A
 
 ```mermaid
 graph TD
-    subgraph Client Layer [Frontend Client - React 19]
+    subgraph Client_Layer["Frontend Client - React 19"]
         ReactApp["React 19 SP Client (Vite + Tailwind v4)"]
         StateMgr["Auth Context & Telemetry State"]
     end
 
-    subgraph API Layer [Backend Server & Services]
+    subgraph API_Layer["Backend Server & Services"]
         ExpressAPI["Express API Server (/api/v3)"]
         AuthModule["JWT & RBAC Middleware"]
         AIService["AI Engine (Gemini LLM Prompting)"]
@@ -45,12 +45,12 @@ graph TD
         PrismaClient["Prisma ORM Layer"]
     end
 
-    subgraph Data & Queue Tier [Cache & Storage]
-        Postgres[(PostgreSQL Database)]
-        Redis[(Redis Cache & BullMQ Queue)]
+    subgraph Data_Tier["Cache & Storage"]
+        Postgres["PostgreSQL Database"]
+        Redis["Redis Cache & BullMQ Queue"]
     end
 
-    subgraph Worker Layer [Distributed Background Daemons]
+    subgraph Worker_Layer["Distributed Background Daemons"]
         Scheduler["Node-Cron Scheduler"]
         BullMQ["BullMQ Queue Orchestrator"]
         HealthWorker["Health Check Sweeper"]
@@ -58,24 +58,24 @@ graph TD
         PortWorker["TCP Port Scanner"]
     end
 
-    ReactApp -->|REST API Requests / JWT| ExpressAPI
+    ReactApp -->|"REST API Requests / JWT"| ExpressAPI
     ExpressAPI --> AuthModule
     ExpressAPI --> AIService
     ExpressAPI --> ReportEngine
     ExpressAPI --> PrismaClient
     PrismaClient --> Postgres
     
-    ExpressAPI -->|Dispatch Manual Audit| BullMQ
-    Scheduler -->|Cron Schedule (Periodic Sweeps)| BullMQ
-    BullMQ <--->|Job Queue Management| Redis
+    ExpressAPI -->|"Dispatch Manual Audit"| BullMQ
+    Scheduler -->|"Cron Schedule (Periodic Sweeps)"| BullMQ
+    BullMQ <-->|"Job Queue Management"| Redis
 
-    HealthWorker -->|HTTP / HTTPS / Ping| ExternalTargets["Monitored Targets / Remote Nodes"]
-    SSLWorker -->|TLS Socket Audit| ExternalTargets
-    PortWorker -->|TCP Socket Inspection| ExternalTargets
+    HealthWorker -->|"HTTP / HTTPS / Ping"| ExternalTargets["Monitored Targets / Remote Nodes"]
+    SSLWorker -->|"TLS Socket Audit"| ExternalTargets
+    PortWorker -->|"TCP Socket Inspection"| ExternalTargets
 
-    HealthWorker -->|Persist Diagnostics| PrismaClient
-    SSLWorker -->|Persist SSL Records| PrismaClient
-    PortWorker -->|Persist Open Ports| PrismaClient
+    HealthWorker -->|"Persist Diagnostics"| PrismaClient
+    SSLWorker -->|"Persist SSL Records"| PrismaClient
+    PortWorker -->|"Persist Open Ports"| PrismaClient
 ```
 
 ---
@@ -176,17 +176,17 @@ erDiagram
 
     USER {
         string id PK
-        string username UNIQUE
-        string email UNIQUE
+        string username
+        string email
         string passwordHash
         string fullName
-        enum role "USER | ADMIN"
+        string role
         datetime createdAt
     }
 
     REFRESH_TOKEN {
         string id PK
-        string token UNIQUE
+        string token
         string userId FK
         datetime expiresAt
         boolean revoked
@@ -197,7 +197,7 @@ erDiagram
         string userId FK
         string name
         string host
-        enum type "WEBSITE | API | IP"
+        string type
         int interval
         boolean enabled
     }
@@ -205,7 +205,7 @@ erDiagram
     HEALTH_LOG {
         string id PK
         string deviceId FK
-        enum status "UP | DOWN"
+        string status
         int latency
         int responseCode
         string message
@@ -219,14 +219,14 @@ erDiagram
         string subject
         datetime validTo
         int daysRemaining
-        enum status "VALID | EXPIRING | EXPIRED | INVALID"
+        string status
         datetime checkedAt
     }
 
     PORT_SCAN_LOG {
         string id PK
         string deviceId FK
-        int_array openPorts
+        string openPorts
         datetime checkedAt
     }
 
@@ -234,7 +234,7 @@ erDiagram
         string id PK
         string deviceId FK
         string type
-        string status "OPEN | RESOLVED"
+        string status
         string error
         datetime openedAt
         datetime resolvedAt
@@ -243,8 +243,8 @@ erDiagram
     ACTIVITY_LOG {
         string id PK
         string userId FK
-        enum action "LOGIN | LOGOUT | CREATE | UPDATE | DELETE"
-        enum entity "DEVICE | USER"
+        string action
+        string entity
         string entityId
         datetime createdAt
     }
