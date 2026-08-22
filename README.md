@@ -1,324 +1,172 @@
-# 🌐 NetScope | Enterprise Asynchronous Host Diagnostics & AI Incident Analysis Platform
+# NetScope — AI-Powered Infrastructure Observability Platform
 
-[![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Redis](https://img.shields.io/badge/Redis-BullMQ-DC382D?logo=redis&logoColor=white)](https://redis.io/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4.0-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Google Gemini AI](https://img.shields.io/badge/Google_Gemini-AI_Diagnostics-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
-
-**NetScope** is an enterprise-grade, developer-first health auditing and network diagnostics platform designed to continuously monitor web services, HTTP/HTTPS endpoints, TCP ports, and SSL certificates. 
-
-Engineered with a **decoupled asynchronous architecture**, NetScope orchestrates concurrent latency sweeps and security audits via **BullMQ** and **Redis** background worker queues, persisting high-frequency diagnostic logs to a **PostgreSQL** relational database managed with **Prisma ORM**. It features an integrated **LLM-Powered AI Assistant** for real-time anomaly detection, automated root-cause analysis, and SLA compliance reporting.
+NetScope (InfraScope) is a self-hosted, enterprise-ready infrastructure observability platform upgraded with an **AI Intelligence Layer**. It uses **scikit-learn Isolation Forest** for machine learning anomaly detection, **deterministic alert prioritization**, and **LLM structured incident analysis** (powered by Groq `openai/gpt-oss-20b` & `llama-3.3-70b`) to give SREs and DevOps teams instant root-cause clarity and automated CLI remediation playbooks.
 
 ---
 
-## 🌟 Key Engineering & Architectural Highlights
+## 📸 Application Screenshots & Visual Tour
 
-- ⚡ **Asynchronous Distributed Auditing Pipeline:** Non-blocking background worker daemons decoupled from the main HTTP API server, processing concurrent network ping, port scan, and SSL verification jobs without blocking client request threads.
-- ⏱️ **Granular Network Phase Latency Breakdown (OSI Layer Diagnostics):** Measures and records precise per-phase network timings (DNS lookup time, TCP socket connect handshake, TLS negotiation, and Time to First Byte - TTFB) for every HTTP/HTTPS health sweep.
-- 🤖 **AI-Driven Intelligent Diagnostics & Root Cause Analysis:** Integrated Google Gemini LLM prompting engine (`Backend/src/modules/ai`) that synthesizes health telemetry, error trends, and open port registries to deliver natural-language incident explanations and remediation recommendations.
-- 🔐 **Enterprise Authentication & Session Security:** Complete JWT-based authentication system featuring short-lived access tokens, rotatable refresh token persistence (`RefreshToken` Prisma model), password hashing via `bcrypt`, user-scoped resource isolation, and detailed activity logs.
-- 📊 **Real-Time Interactive Telemetry Dashboard:** Responsive single-page client built with React 19, Vite, and Tailwind CSS v4, featuring dynamic Chart.js latency visualizer graphs, live countdown worker indicators, and real-time status badges.
-- 🔒 **Comprehensive Security & TLS Expiry Auditing:** Continuous monitoring of SSL/TLS certificate chains (validity windows, days remaining, issuers, fingerprints) and automated TCP socket port sweeps to identify unexpected exposed services.
-- 📉 **Automated Incident Management & SLA Reporting Engine:** Tracks downtime incidents, calculates Mean Time to Repair (MTTR) and uptime availability ratios, and generates downloadable executive SLA summary reports in PDF and CSV formats.
+### 1. Real-time Telemetry & Overview Dashboard
+![Overview Dashboard](docs/screenshots/dashboard.png)
+*Features high-density KPI cards, interactive Recharts latency area charts with gradient fill, device status breakdown donut, and real-time active monitor controls.*
 
 ---
 
-## 🏗️ System Architecture & Workflow
+### 2. Monitored Devices & Target Management
+![Device Management](docs/screenshots/devices.png)
+*Configure target websites, REST APIs, and IP addresses with custom check frequencies (30s to 60m), status indicators, and one-click manual diagnostic sweeps.*
 
-NetScope enforces a clear separation of concerns across Client Rendering, REST API Routing, Intelligent AI Reasoning, and Distributed Worker Queues.
+---
+
+### 3. AI Assistant & Telemetry Reasoning Engine
+![AI Diagnostic Assistant](docs/screenshots/ai_assistant.png)
+*Interactive generative AI console powered by Groq to analyze raw telemetry logs, SSL security validity, open TCP ports, and issue actionable fix recommendations.*
+
+---
+
+### 4. Incidents & Security Alerts Hub
+![Incidents and Security Alerts](docs/screenshots/incidents.png)
+*Prioritized infrastructure incidents with automated ML isolation forest anomaly scores, severity classification (`CRITICAL`, `HIGH`, `MEDIUM`), step-by-step incident progression timelines, and automated SRE CLI remediation playbooks.*
+
+---
+
+## 🏗️ Architecture Diagram
 
 ```mermaid
 graph TD
-    subgraph Client_Layer["Frontend Client - React 19"]
-        ReactApp["React 19 SP Client (Vite + Tailwind v4)"]
-        StateMgr["Auth Context & Telemetry State"]
-    end
-
-    subgraph API_Layer["Backend Server & Services"]
-        ExpressAPI["Express API Server (/api/v3)"]
-        AuthModule["JWT & RBAC Middleware"]
-        AIService["AI Engine (Gemini LLM Prompting)"]
-        ReportEngine["SLA Report & Metrics Generator"]
-        PrismaClient["Prisma ORM Layer"]
-    end
-
-    subgraph Data_Tier["Cache & Storage"]
-        Postgres["PostgreSQL Database"]
-        Redis["Redis Cache & BullMQ Queue"]
-    end
-
-    subgraph Worker_Layer["Distributed Background Daemons"]
-        Scheduler["Node-Cron Scheduler"]
-        BullMQ["BullMQ Queue Orchestrator"]
-        HealthWorker["Health Check Sweeper"]
-        SSLWorker["SSL Certificate Validator"]
-        PortWorker["TCP Port Scanner"]
-    end
-
-    ReactApp -->|"REST API Requests / JWT"| ExpressAPI
-    ExpressAPI --> AuthModule
-    ExpressAPI --> AIService
-    ExpressAPI --> ReportEngine
-    ExpressAPI --> PrismaClient
-    PrismaClient --> Postgres
+    A[React Dashboard Frontend] -->|REST API| B[Node.js / Express Backend]
+    B --> C[(PostgreSQL Database)]
+    B --> D[Redis + BullMQ Queues]
+    D --> E[Monitoring Workers]
+    E -->|Save Logs & State| C
+    E -->|Telemetry Window HTTP POST| F[Python FastAPI AI Microservice]
     
-    ExpressAPI -->|"Dispatch Manual Audit"| BullMQ
-    Scheduler -->|"Cron Schedule (Periodic Sweeps)"| BullMQ
-    BullMQ <-->|"Job Queue Management"| Redis
-
-    HealthWorker -->|"HTTP / HTTPS / Ping"| ExternalTargets["Monitored Targets / Remote Nodes"]
-    SSLWorker -->|"TLS Socket Audit"| ExternalTargets
-    PortWorker -->|"TCP Socket Inspection"| ExternalTargets
-
-    HealthWorker -->|"Persist Diagnostics"| PrismaClient
-    SSLWorker -->|"Persist SSL Records"| PrismaClient
-    PortWorker -->|"Persist Open Ports"| PrismaClient
+    subgraph AI Intelligence Layer
+        F --> G[Isolation Forest Anomaly Detector]
+        F --> H[Deterministic Alert Prioritizer]
+        F --> I[LLM Engine Groq API]
+    end
+    
+    F -->|Anomaly Score & LLM Diagnosis| E
+    E -->|Update Incident & Anomaly Records| C
 ```
 
 ---
 
-## 🚀 Core Features & Capabilities
+## 🛠️ Technology Stack
 
-### 1. 🤖 AI Assistant & Root-Cause Diagnostician
-- **Telemetry-Aware Prompting:** Aggregates health status logs, latency spikes, response codes, and port registries to generate contextual prompts for LLM evaluation.
-- **Intelligent Remediation Suggestions:** Provides targeted technical steps (e.g., DNS resolution check, SSL renewal, firewall adjustments) tailored to detected errors.
-- **Resilient Fallback Mechanism:** Gracefully degrades to rule-based fallback summaries when external AI model endpoints are unreachable.
-
-### 2. ⚡ Asynchronous Worker Queue & Latency Ledger
-- **Multi-Protocol Monitoring:** Audits HTTP/HTTPS endpoints, REST APIs, and raw IP targets with configurable monitoring frequencies.
-- **Concurreny & Rate Control:** Utilizes BullMQ queues backed by Redis to manage background audit tasks without starving server resources.
-- **Live Worker Countdown:** Displays real-time scheduling countdowns and status indicators on the client dashboard.
-
-### 3. 🔐 User Authentication & Access Governance
-- **Session Security:** Short-lived JWT access tokens accompanied by server-managed, rotatable refresh tokens stored in PostgreSQL.
-- **Multi-Tenant Data Isolation:** User-owned device registries ensuring strict data boundaries and user activity logging (`ActivityLog`).
-- **Protected Routing:** Route guards and middleware for authenticated API access and secure client navigation.
-
-### 4. 🔒 SSL Certificate Expiry Tracker & TCP Port Scanner
-- **TLS Lifetime Monitoring:** Tracks validity start/end dates, issuer signatures, SHA fingerprints, and days remaining before certificate expiration.
-- **Proactive Expiry Alerts:** Categorizes certificates into `VALID`, `EXPIRING`, `EXPIRED`, or `INVALID` states.
-- **TCP Socket Scanner:** Audits target IP ranges and hostnames for open TCP ports to alert on unauthorized or exposed network services.
-
-### 5. 📉 Incident Lifecycle & SLA Compliance Engine
-- **Automated Incident Logging:** Detects outages instantly and logs open downtime incidents (`Incident` model). Automatically marks incidents as resolved upon service restoration.
-- **Reliability Metrics:** Calculates precise uptime percentages, average latency, peak latency, and Mean Time to Repair (MTTR).
-- **Executive Reporting:** Generates downloadable SLA compliance reports in PDF and CSV formats for executive summaries.
-
-### 6. ⏱️ Network Phase Latency Breakdown (OSI Layer Diagnostics)
-- **High-Precision Socket Timing:** Measures socket connection lifecycle events for every HTTP/HTTPS health check:
-  - **DNS Lookup Time (`dnsTime` in ms):** Domain name resolution latency.
-  - **TCP Connection Handshake (`tcpTime` in ms):** Socket connection establishment time.
-  - **TLS Handshake (`tlsTime` in ms):** SSL/TLS negotiation & security handshake duration.
-  - **Time to First Byte (`ttfbTime` in ms):** Time elapsed before receiving the initial HTTP response byte.
-- **Visual Telemetry UI:** Displays a live, per-phase latency breakdown card with proportional distribution bars on the device dashboard.
-
-### 7. 📖 Interactive Platform Documentation & Knowledge Base (`/docs`)
-- **Comprehensive User Guide:** Built-in documentation portal explaining network telemetry concepts, OSI latency phase diagnostics, SSL certificate lifecycles, open TCP port security risks, and AI assistant prompt workflows.
-- **Developer Quickstart Walkthrough:** Step-by-step guidance on registering endpoints, configuring cron sweep frequencies, analyzing performance logs, and exporting executive SLA reports.
+- **Frontend**: React, Vite, TailwindCSS, Recharts, Lucide Icons
+- **Backend API**: Node.js, Express.js
+- **Database & ORM**: PostgreSQL, Prisma ORM
+- **Task Queue & Cache**: Redis, BullMQ
+- **AI / ML Microservice**: Python 3.11, FastAPI, scikit-learn (Isolation Forest), NumPy, Pandas, Pydantic
+- **LLM Engine**: Groq API (`openai/gpt-oss-20b` & `llama-3.3-70b-versatile` with sub-second inference & structured JSON mode)
+- **Containerization**: Docker & Docker Compose
 
 ---
 
-## 📸 System Screenshots
+## 🤖 AI Features & Methodology
 
-### 🌐 Public Product Landing Page
-![Landing Page](Docs/screenshots/landing_page.png)
+### 1. Isolation Forest Anomaly Detection
+- **Algorithm**: `scikit-learn.ensemble.IsolationForest(n_estimators=100, contamination=0.15)`
+- **Why Isolation Forest?**: Traditional monitoring relies on hardcoded thresholds (e.g. `latency > 500ms`), missing multi-metric anomalies (e.g. latency creep + 5xx error frequency). Isolation Forest isolates anomalies by randomly partitioning features. Anomalies require fewer tree splits because they are rare and distinct.
+- **Engineered Features**:
+  1. `latency`: Response duration in milliseconds
+  2. `is_error`: Binary indicator (1 if status is DOWN or response code $\ge 400$, else 0)
+  3. `error_rate`: Rolling average error ratio across recent checks
+  4. `consecutive_failures`: Running count of contiguous failed checks
+  5. `network_delay`: Combined network overhead (`dnsTime` + `tcpTime` + `tlsTime` + `ttfbTime`)
+- **Score Normalization**: Maps decision function raw outputs to a $[0.0, 1.0]$ score, where $\ge 0.60$ is `HIGH` severity and $\ge 0.75$ is `CRITICAL`.
 
-### 🔐 Authentication & Session Security Portal
-![Authentication Portal](Docs/screenshots/authentication.png)
+### 2. LLM Incident Analyzer & Playbook Generator
+- **Structured Output**: Returns strict Pydantic/JSON schemas (`incident_summary`, `severity`, `observations`, `possible_causes`, `recommended_investigations`, `confidence`, `cli_commands`, `remediation_steps`).
+- **Telemetry Grounding Rules**: Prompts strictly enforce that `observations` must contain observed facts from telemetry logs, while `possible_causes` are explicitly labeled as hypotheses to prevent hallucination.
+- **Automated Remediation Playbooks**: Generates copyable CLI commands (`docker restart`, `kubectl rollout`, `systemctl status`, `curl`) for instant SRE recovery.
 
-### 📊 Real-Time Network Telemetry & Executive Dashboard
-![Dashboard Layout](Docs/screenshots/dashboard.png)
+### 3. Deterministic Alert Prioritization
+- **Scoring Formula**:
+  $$\text{PriorityScore} = \text{BaseWeight} + (0.5 \times \text{ConsecutiveFailures}) + (4.0 \times \text{ErrorRate}) + (2.5 \times \text{AnomalyScore}) + (0.5 \times \text{DurationBoost})$$
+- Scores map deterministically to `LOW`, `MEDIUM`, `HIGH`, and `CRITICAL`.
 
-### 🤖 AI Assistant & Intelligent Network Diagnostician
-![AI Assistant](Docs/screenshots/ai_assistant.png)
-
-### 📱 Monitored Endpoint Registry & Device Management
-![Device Management Catalog](Docs/screenshots/device_management.png)
-
-### 📈 Device Details - Latency Sweep Performance Curve
-![Overview Details](Docs/screenshots/device_details_overview.png)
-
-### 🔒 Device Details - SSL/TLS Security Certificate Diagnostics
-![SSL Details](Docs/screenshots/device_details_ssl.png)
-
-### 🔌 Device Details - TCP Port Scanner Registry
-![Ports Details](Docs/screenshots/device_details_ports.png)
-
-### 📜 Device Details - Health Audit History Ledger
-![Logs Details](Docs/screenshots/device_details_logs.png)
-
-### 📄 Executive SLA Compliance & Automated Monitoring Report
-![SLA Monitoring Report](Docs/screenshots/sla_reports.png)
+### 4. Interactive Telemetry Q&A Assistant
+- Answers user inquiries conversationally in plain English while connecting explanations directly to monitored device telemetry.
 
 ---
 
-## 🛠️ Tech Stack & Engineering Specifications
+## 🛡️ System Resilience & Fallback Design
 
-| Tier | Technology | Purpose & Description |
-| :--- | :--- | :--- |
-| **Frontend** | **React 19**, Vite | Single-page interface built with modern React features and hooks |
-| | **Tailwind CSS v4** | Dark-mode design system with responsive layouts and micro-animations |
-| | **Chart.js** & `react-chartjs-2` | Canvas-rendered interactive latency performance visualizers |
-| | **Lucide React** | Scalable vector icon library for technical UI components |
-| **Backend** | **Node.js**, **Express.js** | Modular REST API server handling request validation, routing, and controller logic |
-| | **Prisma ORM** | Type-safe database client and schema migration tool |
-| | **BullMQ** & **Node-Cron** | Distributed job queue orchestration and periodic cron task scheduling |
-| | **Google Gemini AI API** | Generative AI integration for automated system diagnostics and anomaly reasoning |
-| **Database** | **PostgreSQL** | Relational data persistence for users, devices, health logs, SSL records, and incidents |
-| **Cache & Queue** | **Redis** | In-memory data store providing job queue backend for BullMQ and execution state caching |
+> [!IMPORTANT]
+> **Core Monitoring Resilience**
+> If the Python AI microservice is down, times out (4000ms limit), or returns an error, the Node.js backend catches the error gracefully. Monitoring health checks, Redis status state machines, BullMQ jobs, and PostgreSQL logs continue running without interruption.
 
 ---
 
-## 💾 Relational Database Schema
+## 🗄️ Database Schema Highlights (`Backend/prisma/schema.prisma`)
 
-Managed seamlessly via Prisma ORM on PostgreSQL:
+- **`Device`**: Monitored targets (`id`, `name`, `host`, `type`, `interval`).
+- **`HealthLog`**: Raw historical telemetry (`latency`, `dnsTime`, `tcpTime`, `tlsTime`, `ttfbTime`, `responseCode`, `status`, `checkedAt`).
+- **`Anomaly`**: ML detection records (`anomalyScore`, `severity`, `detectionReason`, `metrics`, `timestamp`).
+- **`Incident`**: Prioritized incidents with LLM diagnosis (`priority`, `priorityScore`, `summary`, `possibleCauses`, `recommendedActions`, `confidence`, `timeline`).
 
-```mermaid
-erDiagram
-    USER ||--o{ REFRESH_TOKEN : "authenticates with"
-    USER ||--o{ DEVICE : "owns"
-    USER ||--o{ ACTIVITY_LOG : "generates"
-    DEVICE ||--o{ HEALTH_LOG : "records"
-    DEVICE ||--o{ SSL_STATUS : "monitors"
-    DEVICE ||--o{ PORT_SCAN_LOG : "audits"
-    DEVICE ||--o{ INCIDENT : "registers"
+---
 
-    USER {
-        string id PK
-        string username
-        string email
-        string passwordHash
-        string fullName
-        string role
-        datetime createdAt
-    }
+## 🚀 Setup & Running Instructions
 
-    REFRESH_TOKEN {
-        string id PK
-        string token
-        string userId FK
-        datetime expiresAt
-        boolean revoked
-    }
+### Local Development
 
-    DEVICE {
-        string id PK
-        string userId FK
-        string name
-        string host
-        string type
-        int interval
-        boolean enabled
-    }
+1. **Start PostgreSQL & Redis**:
+   ```bash
+   docker compose up -d postgres redis
+   ```
 
-    HEALTH_LOG {
-        string id PK
-        string deviceId FK
-        string status
-        int latency
-        int dnsTime
-        int tcpTime
-        int tlsTime
-        int ttfbTime
-        int responseCode
-        string message
-        datetime checkedAt
-    }
+2. **Run Python AI Microservice**:
+   ```bash
+   cd ai_service
+   python -m venv venv
+   source venv/bin/activate  # or venv\Scripts\activate on Windows
+   pip install -r requirements.txt
+   uvicorn main:app --host 0.0.0.0 --port 8000
+   ```
 
-    SSL_STATUS {
-        string id PK
-        string deviceId FK
-        string issuer
-        string subject
-        datetime validTo
-        int daysRemaining
-        string status
-        datetime checkedAt
-    }
+3. **Run Node.js Backend**:
+   ```bash
+   cd Backend
+   npm install
+   npx prisma generate
+   npx prisma migrate dev
+   npm run dev
+   ```
 
-    PORT_SCAN_LOG {
-        string id PK
-        string deviceId FK
-        string openPorts
-        datetime checkedAt
-    }
+4. **Run React Frontend**:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-    INCIDENT {
-        string id PK
-        string deviceId FK
-        string type
-        string status
-        string error
-        datetime openedAt
-        datetime resolvedAt
-    }
+### Docker Compose (Full Stack)
 
-    ACTIVITY_LOG {
-        string id PK
-        string userId FK
-        string action
-        string entity
-        string entityId
-        datetime createdAt
-    }
+```bash
+docker compose up --build
 ```
+Access the application at `http://localhost:5173` and the AI Microservice OpenAPI docs at `http://localhost:8000/docs`.
 
 ---
 
-## 🔌 API Specification
+## 📡 API Endpoints Summary
 
-All API endpoints are versioned under `/api/v3`.
+### Python AI Microservice (`http://localhost:8000`)
+- `GET /health` — Microservice health status & Groq model config
+- `POST /detect-anomaly` — Isolation Forest model inference
+- `POST /analyze-incident` — LLM structured incident diagnosis
+- `POST /prioritize-alert` — Deterministic priority score calculation
+- `POST /summarize-timeline` — Incident timeline narrative generator
+- `POST /generate-playbook` — Automated SRE CLI remediation playbook generator
+- `POST /explain-insight` — Interactive telemetry Q&A explanation engine
 
-### 🔐 Authentication & Session (`/api/v3/auth`)
-- `POST /auth/register` - Create a new user account with hashed password credentials.
-- `POST /auth/login` - Authenticate credentials and issue JWT access token & HTTP-only refresh token.
-- `POST /auth/refresh` - Rotate refresh token and issue a new JWT access token.
-- `POST /auth/logout` - Revoke current refresh token and clear active session.
-- `GET /auth/me` - Retrieve authenticated user profile and permissions.
-
-### 🤖 AI Diagnostics Engine (`/api/v3/ai`)
-- `POST /ai/diagnose` - Request AI-driven root cause analysis and troubleshooting recommendations for a target device.
-- `GET /ai/insights/:deviceId` - Retrieve cached AI incident insights and failure risk summary.
-
-### 📱 Device Registry Management (`/api/v3/devices`)
-- `GET /devices` - List all monitored hosts owned by the user.
-- `POST /devices` - Register a new host (Website, API endpoint, or IP address) with custom frequency interval.
-- `GET /devices/:id` - Retrieve complete configuration and target metadata for a single host.
-- `PUT /devices/:id` - Modify device settings, target URL, or pause/enable monitoring.
-- `DELETE /devices/:id` - Remove device configuration and cascade delete associated diagnostic logs.
-
-### 💓 Health Audits & Latency (`/api/v3/health`)
-- `GET /health/:deviceId` - Fetch historical health check telemetry (response codes, status, latency ms).
-- `POST /health/check/:deviceId` - Dispatch an immediate manual health sweep job to the BullMQ worker queue.
-
-### 🔒 SSL Certificate Diagnostics (`/api/v3/ssl`)
-- `GET /ssl` - Retrieve current TLS certificate status summary across all monitored endpoints.
-- `GET /ssl/:deviceId` - View historical SSL check logs and expiry trends for a specific device.
-- `POST /ssl/check/:deviceId` - Dispatch an immediate manual TLS certificate audit job.
-
-### 🔌 TCP Port Scanner (`/api/v3/ports`)
-- `GET /ports` - Retrieve open TCP port registries across all monitored devices.
-- `GET /ports/:deviceId` - Retrieve historical port scan logs for a target device.
-- `POST /ports/check/:deviceId` - Trigger an immediate TCP port scanning background job.
-
-### 📊 Analytics & SLA Metrics (`/api/v3/analytics` & `/api/v3/dashboard`)
-- `GET /dashboard/summary` - Aggregate metrics (Total Devices, Online/Offline count, Global Avg Latency).
-- `GET /analytics/:deviceId` - Detailed analytics breakdown (Uptime %, Peak Latency, MTTR, Outage count).
-
-### 📄 Executive SLA Reports (`/api/v3/reports`)
-- `GET /reports/summary` - Fetch SLA compliance metrics across customizable date ranges.
-- `GET /reports/export/pdf` - Download executive SLA compliance summary report as a formatted PDF.
-- `GET /reports/export/csv` - Export diagnostic logs and uptime datasets as CSV.
-
----
-
-## ⚡ Engineering Best Practices & Performance Design
-
-1. **Database Indexing:** Compound indexes on `(deviceId, checkedAt)` and single indexes on `userId` and `host` optimize high-frequency time-series queries and fast dashboard rendering.
-2. **Asynchronous Non-Blocking Execution:** Heavy network socket operations (pinging endpoints, TLS handshakes, TCP port scanning) run inside isolated background workers (`Backend/src/workers`), preventing event-loop congestion on the main Express HTTP server.
-3. **Graceful Service Resilience:** The AI module features fallback logic that ensures system dashboard uptime and diagnostic reports remain operational even if external LLM APIs experience downtime.
-4. **Clean Domain-Driven Modular Structure:** Backend modules (`ai`, `auth`, `report`, `health`, `ssl`, `port`, `analytics`, `device`, `dashboard`) strictly separate routes, controllers, and services for maximum maintainability and testability.
+### Node.js Backend API (`http://localhost:5000/api/v3`)
+- `GET /api/v3/ai/anomalies` — Fetch recorded ML anomalies
+- `GET /api/v3/ai/incidents` — Fetch prioritized active incidents
+- `POST /api/v3/ai/incidents/:deviceId/analyze` — Trigger on-demand incident diagnosis
+- `POST /api/v3/ai/playbook/:deviceId` — Generate SRE remediation playbook
+- `GET /api/v3/ai/timeline/:deviceId` — Fetch timeline narrative summary

@@ -1,4 +1,5 @@
 version: '3.8'
+name: netscope
 
 services:
   postgres:
@@ -17,6 +18,17 @@ services:
     ports:
       - "6379:6379"
 
+  ai-service:
+    build:
+      context: ./ai_service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - AI_ENABLED=true
+
   backend:
     build:
       context: ./Backend
@@ -25,13 +37,16 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/netscope?schema=public
       - REDIS_URL=redis://redis:6379
+      - AI_SERVICE_URL=http://ai-service:8000
       - PORT=5000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       - ./Backend:/app
       - /app/node_modules
     depends_on:
       - postgres
       - redis
+      - ai-service
 
   frontend:
     build:

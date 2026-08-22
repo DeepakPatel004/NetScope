@@ -213,7 +213,7 @@ export function buildFallbackSummary(kind, data, promptText = '') {
   // 7. Health Intent
   if (kind === 'health' || /health|status|up|down/i.test(prompt)) {
     return {
-      summary: `Health Audit Telemetry: Target service is UP and operational. Audit history shows ${issueCount} recent issue(s).`,
+      summary: `Recent health checks show ${issueCount} issues. Target service appears stable for now.`,
       recommendations: ['Check health logs for intermittent network timeouts.', 'Confirm DNS resolution stability.'],
     };
   }

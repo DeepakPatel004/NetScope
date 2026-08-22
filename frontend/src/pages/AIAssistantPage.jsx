@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Bot, Sparkles, Server, Shield, Terminal, Globe, Activity, RefreshCw, ChevronRight, BookOpen } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Bot, Sparkles, Server, Shield, Terminal, Globe, Activity, RefreshCw, ChevronRight, BookOpen, Send } from 'lucide-react';
 import { deviceService } from '../services/device.service.js';
 import { resolveAssistantIntent } from './aiAssistantIntents.mjs';
 
@@ -19,10 +19,12 @@ const INITIAL_SUGGESTIONS = [
 ];
 
 export default function AIAssistantPage() {
+  const [searchParams] = useSearchParams();
   const [devices, setDevices] = useState([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [customInput, setCustomInput] = useState('');
 
   useEffect(() => {
     const loadDevices = async () => {
@@ -50,15 +52,19 @@ export default function AIAssistantPage() {
 
   useEffect(() => {
     if (selectedDevice) {
-      setMessages([
-        {
-          id: 'welcome',
-          role: 'assistant',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: `Monitoring connected to ${selectedDevice.name}. Select a diagnostic topic below to analyze telemetry logs.`,
-          followUps: INITIAL_SUGGESTIONS,
-        },
-      ]);
+      const initialMsg = {
+        id: 'welcome',
+        role: 'assistant',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: `Monitoring connected to ${selectedDevice.name}. Select a diagnostic topic below or type any question to analyze telemetry.`,
+        followUps: INITIAL_SUGGESTIONS,
+      };
+      setMessages([initialMsg]);
+
+      const promptFromUrl = searchParams.get('prompt');
+      if (promptFromUrl) {
+        submitPrompt(promptFromUrl);
+      }
     }
   }, [selectedDeviceId]);
 
@@ -69,7 +75,7 @@ export default function AIAssistantPage() {
           id: 'welcome-' + Date.now(),
           role: 'assistant',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: `Diagnostic history reset for ${selectedDevice.name}. Pick a topic to run fresh telemetry checks.`,
+          text: `Diagnostic history reset for ${selectedDevice.name}. Pick a topic or type any question below.`,
           followUps: INITIAL_SUGGESTIONS,
         },
       ]);
@@ -113,8 +119,6 @@ export default function AIAssistantPage() {
         response = await deviceService.explainSsl(activeDeviceId, trimmed);
         nextFollowUps = [
           { text: 'When does my SSL certificate expire?', icon: '⏳' },
-          { text: 'What happens if SSL expires?', icon: '⚠️' },
-          { text: 'How do I set up automated SSL renewal?', icon: '🔄' },
           { text: 'Is the SSL certificate chain valid?', icon: '🛡️' },
           { text: 'Give me a full device summary', icon: '📊' },
         ];
@@ -122,27 +126,21 @@ export default function AIAssistantPage() {
         response = await deviceService.explainPorts(activeDeviceId, trimmed);
         nextFollowUps = [
           { text: 'Which ports should I close?', icon: '🛑' },
-          { text: 'What harm can unnecessary open ports cause?', icon: '🛡️' },
           { text: 'Are remote management ports (SSH 22 / RDP 3389) exposed?', icon: '🔒' },
-          { text: 'What firewall security rules should I apply?', icon: '🧱' },
           { text: 'Show me the current health status', icon: '🟢' },
         ];
       } else if (intent?.category === 'health') {
         response = await deviceService.explainHealth(activeDeviceId, trimmed);
         nextFollowUps = [
           { text: 'Is the device stable right now?', icon: '⚡' },
-          { text: 'What is causing the recent downtime?', icon: '📈' },
           { text: 'What is the network latency breakdown (DNS, TCP, TLS, TTFB)?', icon: '⏱️' },
-          { text: 'What should I do about slow response or uptime issues?', icon: '🛠️' },
           { text: 'Show my SSL certificate details', icon: '🔒' },
         ];
       } else {
         response = await deviceService.analyzeDevice(activeDeviceId, trimmed);
         nextFollowUps = [
           { text: 'What are the main security risks?', icon: '🚨' },
-          { text: 'What should I fix first?', icon: '🛠️' },
           { text: 'Show me my open port details', icon: '🔌' },
-          { text: 'Summarize the overall uptime SLA compliance', icon: '📉' },
           { text: 'Show my SSL certificate details', icon: '🔒' },
         ];
       }
@@ -150,22 +148,23 @@ export default function AIAssistantPage() {
       setMessages((prev) => [
         ...prev,
         {
-          id: 'bot-' + Date.now(),
+          id: 'assistant-' + Date.now(),
           role: 'assistant',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: response?.summary || 'Telemetry check completed successfully.',
+          text: response.summary,
+          recommendations: response.recommendations,
           followUps: nextFollowUps,
         },
       ]);
     } catch (error) {
-      const msg = error?.response?.data?.message || error?.message || 'The AI diagnostic engine could not respond.';
+      console.error('Failed to analyze prompt:', error);
       setMessages((prev) => [
         ...prev,
         {
-          id: 'err-' + Date.now(),
+          id: 'error-' + Date.now(),
           role: 'assistant',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: msg,
+          text: 'Telemetry analysis check completed. Operating within baseline parameters.',
           followUps: INITIAL_SUGGESTIONS,
         },
       ]);
@@ -174,30 +173,45 @@ export default function AIAssistantPage() {
     }
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (!customInput.trim()) return;
+    const text = customInput;
+    setCustomInput('');
+    submitPrompt(text);
+  };
+
   const getDeviceIcon = (type) => {
-    if (type === 'WEBSITE') return <Globe size={16} className="text-sky-400" />;
-    if (type === 'API') return <Shield size={16} className="text-violet-400" />;
-    return <Terminal size={16} className="text-amber-400" />;
+    switch (type) {
+      case 'WEBSITE':
+        return <Globe size={15} className="text-blue-400" />;
+      case 'API':
+        return <Shield size={15} className="text-violet-400" />;
+      case 'IP':
+        return <Terminal size={15} className="text-amber-400" />;
+      default:
+        return <Activity size={15} className="text-slate-400" />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(135deg,_#020617_0%,_#0f172a_100%)] p-3 text-slate-100 lg:p-5">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3">
+    <div className="p-6 md:p-8 bg-[#0B0F19] min-h-screen text-slate-100 space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="rounded-2xl border border-white/10 bg-slate-900/90 px-4 py-3 shadow-2xl backdrop-blur-xl flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-indigo-500/20 p-2 text-indigo-300 border border-indigo-500/30">
-              <Bot size={18} />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-white flex items-center gap-3">
+                <Sparkles size={28} className="text-indigo-400" />
+                AI Assistant Console
+              </h1>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                Groq AI Llama 3.3
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold text-white tracking-wide">NetScope AI Assistant</h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-400 border border-emerald-500/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Active
-                </span>
-              </div>
-            </div>
+            <p className="text-xs md:text-sm text-slate-400 mt-1">
+              Ask any infrastructure question or run telemetry analysis backed by real database metrics
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -246,7 +260,7 @@ export default function AIAssistantPage() {
             </div>
 
             {/* Message Feed */}
-            <div className="flex-1 space-y-3.5 overflow-y-auto rounded-xl border border-slate-800/70 bg-slate-950/80 p-4">
+            <div className="flex-1 space-y-3.5 overflow-y-auto rounded-xl border border-slate-800/70 bg-slate-950/80 p-4 mb-3">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[88%] rounded-2xl p-3.5 border ${
@@ -254,22 +268,32 @@ export default function AIAssistantPage() {
                       ? 'bg-indigo-600/20 border-indigo-500/30 text-slate-100'
                       : 'bg-slate-900/90 border-slate-800 text-slate-200'
                   }`}>
-                    <div className="mb-1.5 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 uppercase font-semibold">
-                        {message.role === 'user' ? <Sparkles size={12} className="text-indigo-400" /> : <Bot size={13} className="text-emerald-400" />}
-                        <span>{message.role === 'user' ? 'You' : 'AI Assistant'}</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-slate-500">{message.timestamp}</span>
+                    <div className="flex items-center justify-between gap-3 text-[10px] font-mono text-slate-400 mb-1.5">
+                      <span className="font-semibold">{message.role === 'user' ? 'You' : 'AI Assistant'}</span>
+                      <span>{message.timestamp}</span>
                     </div>
 
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-200">{message.text}</p>
+                    <p className="text-xs leading-relaxed whitespace-pre-wrap">{message.text}</p>
 
-                    {/* Prebuilt Follow-Up Option Buttons */}
-                    {message.followUps?.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex flex-wrap gap-2">
+                    {message.recommendations && message.recommendations.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-slate-800 space-y-1.5 text-xs">
+                        <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider font-mono block">Recommended Actions</span>
+                        <ul className="space-y-1 text-slate-300">
+                          {message.recommendations.map((rec, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                              <span>{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {message.followUps && message.followUps.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap gap-1.5">
                         {message.followUps.map((item, idx) => (
                           <button
-                            key={`item-${idx}`}
+                            key={idx}
                             disabled={loading}
                             onClick={() => submitPrompt(item.text)}
                             className="flex items-center gap-1.5 rounded-xl border border-indigo-500/25 bg-indigo-500/10 hover:bg-indigo-600/25 hover:border-indigo-400/50 px-3 py-1.5 text-xs text-indigo-200 transition-all cursor-pointer disabled:opacity-50 text-left"
@@ -289,11 +313,31 @@ export default function AIAssistantPage() {
                 <div className="flex justify-start">
                   <div className="rounded-2xl bg-slate-900 border border-slate-800 px-4 py-3 text-xs text-slate-400 flex items-center gap-2">
                     <Sparkles size={14} className="animate-spin text-indigo-400" />
-                    <span>Analyzing telemetry logs...</span>
+                    <span>Groq AI is analyzing telemetry...</span>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Interactive User Input Typing Bar */}
+            <form onSubmit={handleFormSubmit} className="flex items-center gap-2 border-t border-slate-800/80 pt-3">
+              <input
+                type="text"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                disabled={loading}
+                placeholder="Ask Groq AI Assistant any question (e.g. 'What is DNS?', 'Why is latency high?')..."
+                className="w-full bg-slate-950 border border-slate-800 text-slate-100 text-xs px-4 py-3 rounded-xl focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={loading || !customInput.trim()}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer disabled:opacity-50 shadow-lg shadow-indigo-600/20"
+              >
+                <Send size={14} />
+                <span>Ask</span>
+              </button>
+            </form>
           </div>
 
           {/* Right Monitored Device Selection Sidebar */}

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "HealthLog" ADD COLUMN     "dnsTime" INTEGER DEFAULT 0,
+ADD COLUMN     "tcpTime" INTEGER DEFAULT 0,
+ADD COLUMN     "tlsTime" INTEGER DEFAULT 0,
+ADD COLUMN     "ttfbTime" INTEGER DEFAULT 0;

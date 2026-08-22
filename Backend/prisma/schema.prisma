@@ -77,7 +77,8 @@ model Device {
   healthLogs HealthLog[]
   sslLogs   SSLStatus[]
   portScanLogs PortScanLog[]
-  incidents Incident[] 
+  incidents Incident[]
+  anomalies Anomaly[]
 
   @@index([userId])
   @@index([host])
@@ -167,23 +168,66 @@ model PortScanLog {
   @@index([deviceId, checkedAt])
 }
 
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Anomaly {
+  id              String      @id @default(uuid())
+
+  deviceId        String
+  device          Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  timestamp       DateTime    @default(now())
+  anomalyScore    Float
+  severity        Severity
+  detectionReason String
+  metrics         Json
+
+  isResolved      Boolean     @default(false)
+  resolvedAt      DateTime?
+
+  incidents       Incident[]
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@index([deviceId, timestamp])
+  @@index([severity])
+}
 
 model Incident {
-  id          String      @id @default(uuid())
+  id                 String      @id @default(uuid())
 
-  deviceId    String
-  device      Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId           String
+  device             Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
-  type        String      // "DOWNTIME" 
-  status      String      // "OPEN" or "RESOLVED"
+  type               String      // "DOWNTIME", "ANOMALY", "LATENCY_SPIKE"
+  status             String      // "OPEN" or "RESOLVED"
   
-  error       String?     // "Connection timeout"
+  error              String?     // "Connection timeout"
   
-  openedAt    DateTime    @default(now())
-  resolvedAt  DateTime?   
+  priority           Severity    @default(MEDIUM)
+  priorityScore      Float       @default(0.0)
+  priorityReason     String?
+  
+  summary            String?
+  possibleCauses     Json?
+  recommendedActions Json?
+  confidence         Float?
+  timeline           Json?
+
+  anomalyId          String?
+  anomaly            Anomaly?    @relation(fields: [anomalyId], references: [id], onDelete: SetNull)
+
+  openedAt           DateTime    @default(now())
+  resolvedAt         DateTime?   
 
   @@index([deviceId])
   @@index([status])
+  @@index([priority])
 }
 
 model RefreshToken {

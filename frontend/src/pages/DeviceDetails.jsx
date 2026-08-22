@@ -4,8 +4,8 @@ import { api } from '../services/api.js';
 import { deviceService } from '../services/device.service.js';
 import { useToast } from '../context/ToastContext.jsx';
 import {
-  ArrowLeft, Shield, Activity, Terminal, Settings,
-  Trash2, Edit3, Play, AlertCircle, X, ShieldAlert
+  ArrowLeft, Shield, Activity, Terminal, Settings, Sparkles,
+  Trash2, Edit3, AlertCircle, X
 } from 'lucide-react';
 
 export default function DeviceDetails() {
@@ -30,32 +30,40 @@ export default function DeviceDetails() {
 
   const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
       setError(null);
-      const [deviceRes, analyticsRes, healthRes, sslRes, portsRes] = await Promise.all([
-        api.get(`/devices/${id}`),
-        api.get(`/analytics/${id}`),
-        api.get(`/health/${id}`),
-        api.get(`/ssl/${id}`),
-        api.get(`/ports/${id}`)
+      
+      const deviceRes = await api.get(`/devices/${id}`);
+      const devData = deviceRes.data?.data || deviceRes.data;
+      if (!devData) {
+        throw new Error('Device not found');
+      }
+      setDevice(devData);
+
+      const [analyticsRes, healthRes, sslRes, portsRes] = await Promise.all([
+        api.get(`/analytics/${id}`).catch(() => ({ data: { data: null } })),
+        api.get(`/health/${id}`).catch(() => ({ data: { data: [] } })),
+        api.get(`/ssl/${id}`).catch(() => ({ data: { data: [] } })),
+        api.get(`/ports/${id}`).catch(() => ({ data: { data: [] } }))
       ]);
 
-      setDevice(deviceRes.data.data);
-      setAnalytics(analyticsRes.data.data);
-      setHealthHistory(healthRes.data.data);
+      setAnalytics(analyticsRes.data?.data || null);
+      setHealthHistory(healthRes.data?.data || []);
 
-      if (sslRes.data.data && sslRes.data.data.length > 0) {
+      if (sslRes.data?.data && sslRes.data.data.length > 0) {
         setSslInfo(sslRes.data.data[0]);
       } else {
         setSslInfo(null);
       }
 
-      if (portsRes.data.data && portsRes.data.data.length > 0) {
+      if (portsRes.data?.data && portsRes.data.data.length > 0) {
         setPortsInfo(portsRes.data.data[0]);
       } else {
         setPortsInfo(null);
       }
     } catch (err) {
-      setError("Failed to fetch device logs and configuration.");
+      console.error('Failed to load device details:', err);
+      setError('Failed to fetch device logs and configuration.');
     } finally {
       setLoading(false);
     }
@@ -69,13 +77,13 @@ export default function DeviceDetails() {
     setChecking(true);
     try {
       await deviceService.triggerManualCheck(id);
-      toast.success("Health diagnostics sweep dispatched");
+      toast.success('Health diagnostics sweep dispatched');
       setTimeout(async () => {
         await fetchData();
         setChecking(false);
       }, 1500);
     } catch (err) {
-      toast.error("Failed to queue health diagnostics");
+      toast.error('Failed to queue health diagnostics');
       setChecking(false);
     }
   };
@@ -84,13 +92,12 @@ export default function DeviceDetails() {
     setSslChecking(true);
     try {
       await deviceService.triggerSSLCheck(id);
-      toast.success("TLS certificate audit dispatched");
+      toast.success('TLS certificate audit dispatched');
       setTimeout(async () => {
         await fetchData();
         setSslChecking(false);
       }, 1500);
     } catch (err) {
-      console.error('SSL trigger failed:', err);
       const message = err.response?.data?.message || err.message || 'Failed to trigger SSL check.';
       toast.error(message);
       setSslChecking(false);
@@ -101,13 +108,13 @@ export default function DeviceDetails() {
     setPortsChecking(true);
     try {
       await deviceService.triggerPortsCheck(id);
-      toast.success("TCP port scan audit dispatched");
+      toast.success('TCP port scan audit dispatched');
       setTimeout(async () => {
         await fetchData();
         setPortsChecking(false);
       }, 1500);
     } catch (err) {
-      toast.error("Failed to trigger port scan");
+      toast.error('Failed to trigger port scan');
       setPortsChecking(false);
     }
   };
@@ -117,9 +124,9 @@ export default function DeviceDetails() {
       const updatedEnabled = !device.enabled;
       await deviceService.updateDevice(id, { enabled: updatedEnabled });
       setDevice((prev) => ({ ...prev, enabled: updatedEnabled }));
-      toast.info(updatedEnabled ? "Active monitoring enabled" : "Active monitoring paused");
+      toast.info(updatedEnabled ? 'Active monitoring enabled' : 'Active monitoring paused');
     } catch (err) {
-      toast.error("Failed to update active state");
+      toast.error('Failed to update active state');
     }
   };
 
@@ -130,7 +137,7 @@ export default function DeviceDetails() {
       setDevice((prev) => ({ ...prev, interval: newInterval }));
       toast.info(`Ping interval updated to ${newInterval} seconds`);
     } catch (err) {
-      toast.error("Failed to update ping interval");
+      toast.error('Failed to update ping interval');
     }
   };
 
@@ -138,10 +145,10 @@ export default function DeviceDetails() {
     setDeleteLoading(true);
     try {
       await deviceService.deleteDevice(id);
-      toast.success("Device configuration removed");
+      toast.success('Device configuration removed');
       navigate('/devices');
     } catch (err) {
-      toast.error("Deletion request failed");
+      toast.error('Deletion request failed');
       setDeleteLoading(false);
     }
   };
@@ -156,10 +163,10 @@ export default function DeviceDetails() {
 
   if (loading && !device) {
     return (
-      <div className="p-8 bg-zinc-950 min-h-screen text-zinc-100 flex items-center justify-center">
+      <div className="p-8 bg-[#0B0F19] min-h-screen text-slate-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Activity size={24} className="animate-spin text-emerald-400" />
-          <span className="text-xs font-mono text-zinc-500">POLLING DEVICE DATAGRAMS...</span>
+          <Activity size={24} className="animate-spin text-indigo-400" />
+          <span className="text-xs font-mono text-slate-400">POLLING DEVICE TELEMETRY...</span>
         </div>
       </div>
     );
@@ -167,14 +174,14 @@ export default function DeviceDetails() {
 
   if (error || !device) {
     return (
-      <div className="p-8 bg-zinc-950 min-h-screen text-zinc-100 flex items-center justify-center">
-        <div className="max-w-md text-center bg-zinc-900 border border-zinc-800/80 rounded-2xl p-8">
+      <div className="p-8 bg-[#0B0F19] min-h-screen text-slate-100 flex items-center justify-center">
+        <div className="max-w-md text-center bg-[#111827] border border-[#1E293B] rounded-2xl p-8 shadow-xl">
           <AlertCircle size={32} className="text-rose-400 mx-auto mb-4" />
-          <h2 className="text-sm font-bold text-zinc-200">CONNECTION LOSS</h2>
-          <p className="text-xs text-zinc-400 mt-2 font-mono">{error || "DEVICE REGISTRY EMPTY"}</p>
+          <h2 className="text-sm font-bold text-slate-200 uppercase tracking-wide">CONNECTION LOSS / NOT FOUND</h2>
+          <p className="text-xs text-slate-400 mt-2 font-mono">{error || 'Device not found in registry.'}</p>
           <Link
             to="/devices"
-            className="mt-6 inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800/80 text-zinc-300 px-4 py-2 rounded-xl text-xs font-mono transition-all"
+            className="mt-6 inline-flex items-center gap-2 bg-[#1E293B] hover:bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-mono font-semibold transition"
           >
             <ArrowLeft size={12} /> RETURN TO CATALOG
           </Link>
@@ -184,76 +191,90 @@ export default function DeviceDetails() {
   }
 
   const latestLog = healthHistory[0];
-  const isHealthy = latestLog ? latestLog.status === 'UP' : false;
+  const isHealthy = latestLog ? latestLog.status === 'UP' : (device.status === 'UP' || true);
 
   const tabs = [
-    { name: 'Overview', path: `/devices/${id}`, icon: Activity },
+    { name: 'Overview', path: `/devices/${id}`, icon: Activity, end: true },
     { name: 'SSL Security', path: `/devices/${id}/ssl`, icon: Shield },
     { name: 'Port Scanner', path: `/devices/${id}/ports`, icon: Terminal },
-    { name: 'Audit Ledger', path: `/devices/${id}/logs`, icon: Settings }
+    { name: 'Audit Ledger', path: `/devices/${id}/logs`, icon: Settings },
   ];
 
   return (
-    <div className="p-8 bg-zinc-950 min-h-screen text-zinc-100">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <Link
-              to="/devices"
-              className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200 rounded-xl transition-all"
-            >
-              <ArrowLeft size={14} />
-            </Link>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold tracking-tight text-white">{device.name}</h1>
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400 animate-pulse'}`} />
-                  <span className={`text-[10px] font-mono tracking-widest uppercase ${isHealthy ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {isHealthy ? 'ONLINE' : 'OFFLINE'}
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs text-zinc-500 font-mono mt-1">{device.host}</p>
-            </div>
+    <div className="p-6 md:p-8 bg-[#0B0F19] min-h-screen text-slate-100">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header with Professional Breadcrumb */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+            <Link to="/devices" className="hover:text-indigo-400 transition">Devices Catalog</Link>
+            <span className="text-slate-600">/</span>
+            <span className="text-slate-200 font-semibold">{device.name}</span>
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+              Endpoint Deep-Dive
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Link
-              to={`/devices/edit/${id}`}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 hover:border-zinc-600 text-zinc-200 px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
-            >
-              <Edit3 size={13} className="text-indigo-400" />
-              EDIT SETUP
-            </Link>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <Link
+                to="/devices"
+                className="p-2 bg-[#111827] hover:bg-[#1E293B] border border-[#1E293B] text-slate-400 hover:text-white rounded-xl transition"
+                title="Return to Monitored Endpoints Catalog"
+              >
+                <ArrowLeft size={16} />
+              </Link>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold tracking-tight text-white">{device.name}</h1>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400 animate-pulse'}`} />
+                    <span className={`text-[10px] font-mono tracking-widest uppercase font-bold ${isHealthy ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {isHealthy ? 'ONLINE' : 'OFFLINE'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400 font-mono mt-1">Target Host: <strong className="text-slate-200">{device.host}</strong></p>
+              </div>
+            </div>
 
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-rose-950/30 hover:bg-rose-900/50 border border-rose-800/40 hover:border-rose-700/60 text-rose-300 hover:text-rose-100 px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all shadow-sm active:scale-95 cursor-pointer"
-            >
-              <Trash2 size={13} className="text-rose-400" />
-              DELETE
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Link
+                to={`/devices/edit/${id}`}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-[#1E293B] border border-[#1E293B] text-slate-200 px-4 py-2 rounded-xl text-xs font-mono font-semibold transition"
+              >
+                <Edit3 size={13} className="text-indigo-400" />
+                EDIT SETUP
+              </Link>
+
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-rose-950/30 hover:bg-rose-900/50 border border-rose-800/40 text-rose-300 hover:text-rose-100 px-4 py-2 rounded-xl text-xs font-mono font-semibold transition cursor-pointer"
+              >
+                <Trash2 size={13} className="text-rose-400" />
+                DELETE
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 bg-zinc-900 border border-zinc-800/80 p-4 rounded-2xl mb-8">
+        {/* Monitor Toggle Bar */}
+        <div className="flex flex-wrap items-center gap-4 bg-[#111827] border border-[#1E293B] p-4 rounded-xl text-xs">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest font-mono">Active Monitor:</span>
+            <span className="font-semibold text-slate-400 uppercase tracking-widest font-mono">Active Monitor:</span>
             <button
               onClick={handleToggleEnabled}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${device.enabled ? 'bg-emerald-500' : 'bg-zinc-800'}`}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none ${device.enabled ? 'bg-emerald-500' : 'bg-slate-700'}`}
             >
               <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform duration-200 ${device.enabled ? 'translate-x-4.5' : 'translate-x-1'}`} />
             </button>
           </div>
           
           <div className="flex items-center gap-3 ml-0 sm:ml-6">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest font-mono">Interval:</span>
+            <span className="font-semibold text-slate-400 uppercase tracking-widest font-mono">Interval:</span>
             <select
               value={device.interval}
               onChange={handleIntervalChange}
-              className="bg-zinc-950 border border-zinc-800/80 text-zinc-300 rounded-lg text-xs font-mono py-1.5 px-3 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="bg-[#0B0F19] border border-[#1E293B] text-slate-300 rounded-lg text-xs font-mono py-1.5 px-3 focus:outline-none"
             >
               <option value="30">30 Seconds</option>
               <option value="60">1 Minute</option>
@@ -265,19 +286,20 @@ export default function DeviceDetails() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2.5 mb-8 bg-zinc-950/80 p-1.5 rounded-2xl border border-zinc-800/80 max-w-fit">
+        {/* Tabs Bar */}
+        <div className="flex flex-wrap gap-2 bg-[#111827] p-1.5 rounded-xl border border-[#1E293B] max-w-fit">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <NavLink
                 key={tab.path}
                 to={tab.path}
-                end
+                end={tab.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2 text-xs font-bold font-mono tracking-wider uppercase rounded-xl transition-all ${
+                  `flex items-center gap-2 px-4 py-2 text-xs font-bold font-mono tracking-wider uppercase rounded-lg transition ${
                     isActive
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/10'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                      ? 'bg-[#4F46E5] text-white shadow-md shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-[#1E293B]/50'
                   }`
                 }
               >
@@ -288,10 +310,11 @@ export default function DeviceDetails() {
           })}
         </div>
 
+        {/* Tab Outlet Content */}
         <Outlet context={{
           device,
           analytics,
-          healthHistory,
+          healthHistory: healthHistory || [],
           sslInfo,
           portsInfo,
           checking,
@@ -303,35 +326,36 @@ export default function DeviceDetails() {
           formatDate
         }} />
 
+        {/* Delete Modal */}
         {showDeleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-zinc-900 border border-zinc-800/80 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
-              <div className="p-6 border-b border-zinc-800/80 flex items-center justify-between">
-                <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-widest">REMOVE DEVICE</h3>
+            <div className="bg-[#111827] border border-[#1E293B] w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
+              <div className="p-5 border-b border-[#1E293B] flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-widest">REMOVE DEVICE</h3>
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="text-zinc-500 hover:text-zinc-300 p-1 rounded-lg hover:bg-zinc-800 transition-all"
+                  className="text-slate-500 hover:text-slate-300 p-1 rounded-lg hover:bg-slate-800 transition"
                 >
                   <X size={14} />
                 </button>
               </div>
-              <div className="p-6">
-                <p className="text-xs text-zinc-400 leading-relaxed font-mono">
+              <div className="p-5">
+                <p className="text-xs text-slate-400 leading-relaxed font-mono">
                   CONFIRM DISPOSAL OF TARGET ENDPOINT DEVICE CONFIGURATION RECORD AND RETENTION LOG FILES.
                 </p>
               </div>
-              <div className="p-6 bg-zinc-950 border-t border-zinc-800/80 flex justify-end gap-3">
+              <div className="p-5 bg-[#0B0F19] border-t border-[#1E293B] flex justify-end gap-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   disabled={deleteLoading}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-300 rounded-xl text-xs font-mono transition-all"
+                  className="px-4 py-2 bg-[#111827] border border-[#1E293B] text-slate-300 rounded-xl text-xs font-mono transition"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={handleConfirmDelete}
                   disabled={deleteLoading}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-mono transition-all"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-mono transition"
                 >
                   DISPOSE
                 </button>

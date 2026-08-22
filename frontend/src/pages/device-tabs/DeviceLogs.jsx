@@ -2,7 +2,8 @@ import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 
 export default function DeviceLogs() {
-  const { healthHistory } = useOutletContext();
+  const { healthHistory = [] } = useOutletContext() || {};
+  const safeLogs = Array.isArray(healthHistory) ? healthHistory : [];
 
   return (
     <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-6">
@@ -14,7 +15,7 @@ export default function DeviceLogs() {
         <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Last 50 Sweeps</span>
       </div>
 
-      {healthHistory.length > 0 ? (
+      {safeLogs.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-left font-mono text-xs border-collapse">
             <thead>
@@ -27,7 +28,7 @@ export default function DeviceLogs() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/55">
-              {healthHistory.map((log) => (
+              {safeLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-zinc-950/30">
                   <td className="py-3 text-zinc-300">{new Date(log.checkedAt).toLocaleString()}</td>
                   <td className="py-3">

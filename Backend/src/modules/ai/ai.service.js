@@ -2,15 +2,9 @@ import prisma from '../../config/database.js';
 import { analyticsService } from '../analytics/analytics.service.js';
 import { reportService } from '../report/report.service.js';
 import { buildFallbackSummary, buildInsightPrompt } from './prompt.builder.js';
+import { aiClient } from '../../utils/aiClient.js';
 
 const reportSnapshots = new Map();
-
-function buildResponse(kind, payload, fallback) {
-  return {
-    summary: payload?.summary || fallback.summary,
-    recommendations: payload?.recommendations || fallback.recommendations,
-  };
-}
 
 function buildUnavailableAiResponse(fallback = null) {
   const defaultRecommendations = [
@@ -47,283 +41,282 @@ function normalizeAiContent(text) {
   if (typeof text !== 'string') return '';
 
   let normalized = text
-    .replace(/[\u0000-\u001f\u007f]/g, ' ')
-    .replace(/\*\*/g, '')
-    .replace(/(?:and\s+)?Formatting:\s*\*?\s*Make it sound.*$/gi, '')
-    .replace(/Instructions?:.*$/gi, '')
+    .replace(/^["']|["']$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  normalized = normalized.replace(/^[:)*\s#]+/i, '');
-  normalized = normalized.replace(/[:)*\s]+$/i, '');
-  normalized = normalized.replace(/^great news!\s*/i, '');
-
-  return normalized.trim();
-}
-
-async function callAiModel(prompt, retriesLeft = 1) {
-  const enabled = process.env.AI_ENABLED !== 'false';
-  const apiKey = process.env.AI_API_KEY?.trim();
-
-  if (!enabled) {
-    return { content: null, available: false, reason: 'disabled' };
+  const codeFenceMatch = normalized.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (codeFenceMatch) {
+    normalized = codeFenceMatch[1].trim();
   }
 
-  if (!apiKey) {
-    return { content: null, available: false, reason: 'missing-api-key' };
-  }
-
-  const baseUrl = (process.env.AI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/models').trim();
-  const envModel = (process.env.AI_MODEL || 'gemini-1.5-flash').trim();
-  // Ensure we use official supported model names
-  const candidateModels = [envModel, 'gemini-1.5-flash', 'gemini-2.0-flash'].filter((v, i, a) => a.indexOf(v) === i);
-
-  for (const model of candidateModels) {
-    const endpointUrl = baseUrl.includes(':generateContent')
-      ? baseUrl
-      : `${baseUrl.replace(/\/+$/, '')}/${encodeURIComponent(model)}:generateContent`;
-
-    const controller = new AbortController();
-    let timeoutId;
-    const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS || 10000);
-    const timeoutPromise = new Promise((_, reject) => {
-      timeoutId = setTimeout(() => {
-        controller.abort();
-        reject(new Error('timeout'));
-      }, Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 10000);
-    });
-
+  if (normalized.startsWith('{') && normalized.endsWith('}')) {
     try {
-      const response = await Promise.race([
-        fetch(endpointUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-goog-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: prompt }],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 2000,
-            },
-          }),
-          signal: controller.signal,
-        }),
-        timeoutPromise,
-      ]);
-
-      if (response.status === 429 && retriesLeft > 0) {
-        console.warn(`[Gemini API] 429 Rate Limit hit for ${model}. Retrying in 1.2s...`);
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-        return callAiModel(prompt, retriesLeft - 1);
+      const parsed = JSON.parse(normalized);
+      if (typeof parsed?.summary === 'string') {
+        return parsed.summary;
       }
-
-      if (!response.ok) {
-        console.warn(`[Gemini API] ${model} returned HTTP ${response.status}. Trying next model...`);
-        continue;
-      }
-
-      const data = await response.json();
-      const content = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      if (content) {
-        return { content, available: true, reason: 'ok' };
-      }
-    } catch (error) {
-      console.warn(`[Gemini API] Failed request for ${model}: ${error.message}`);
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
+    } catch {
+      // Fallback to text cleanup if JSON parsing fails
     }
   }
 
-  return { content: null, available: false, reason: 'all-models-failed' };
+  return normalized;
 }
 
-async function generateInsight(kind, payload, fallback, promptText = '') {
-  try {
-    const prompt = buildInsightPrompt(kind, payload, promptText);
-    const aiResult = await callAiModel(prompt);
-
-    if (aiResult?.content) {
-      const cleanedSummary = normalizeAiContent(aiResult.content);
-      if (cleanedSummary && !isIncompleteAiFragment(cleanedSummary)) {
-        return buildResponse(kind, {
-          summary: cleanedSummary,
-          recommendations: fallback.recommendations,
-        }, fallback);
-      }
-    }
-
-    return buildResponse(kind, {
-      summary: fallback.summary,
-      recommendations: fallback.recommendations,
-    }, fallback);
-  } catch (error) {
-    console.error('AI insight generation failed', error);
-    return buildUnavailableAiResponse(fallback);
-  }
-}
-
-function buildConversationFallback(promptText) {
-  const normalized = (promptText || '').trim().toLowerCase();
-
-  if (!normalized) {
-    return {
-      summary: 'Hello! I can help explain your device health, SSL status, open ports, or overall monitoring trends.',
-      recommendations: ['Pick a device to get started.', 'Ask about health, SSL, or ports.'],
-    };
+function sanitizeAiResponse(responsePayload, fallback) {
+  if (!responsePayload || !responsePayload.summary) {
+    return fallback;
   }
 
-  if (normalized.includes('hello') || normalized.includes('hi') || normalized.includes('hey')) {
-    return {
-      summary: 'Hello! I can help you quickly understand your device status in plain English.',
-      recommendations: ['Ask about health, SSL, or ports.', 'Choose a device and I’ll summarize it for you.'],
-    };
-  }
-
-  if (normalized.includes('history') || normalized.includes('summar') || normalized.includes('overview')) {
-    return {
-      summary: 'I can summarize the recent monitoring history for the selected device, including health checks, SSL posture, and open-port findings.',
-      recommendations: ['Select a device first if needed.', 'Ask for a health, SSL, or port summary.'],
-    };
-  }
+  const summary = normalizeAiContent(responsePayload.summary);
+  const recommendations = Array.isArray(responsePayload.recommendations)
+    ? responsePayload.recommendations.map(normalizeAiContent).filter(Boolean)
+    : fallback.recommendations;
 
   return {
-    summary: 'I can help explain the current monitoring status for this device in simple terms.',
-    recommendations: ['Ask about health, SSL, or ports.', 'I can also give you an overall summary.'],
+    summary,
+    recommendations,
   };
 }
 
-async function safePrismaCall(model, operation, options = {}) {
-  if (!model || typeof model[operation] !== 'function') {
-    return null;
-  }
-
-  try {
-    return await model[operation](options);
-  } catch (error) {
-    console.error(`Prisma ${operation} failed`, error);
-    return null;
-  }
-}
-
 async function getDeviceContext(userId, deviceId) {
-  const device = await safePrismaCall(prisma.device, 'findFirst', {
-    where: { id: deviceId, userId },
-    select: { id: true, name: true, host: true },
+  return prisma.device.findFirst({
+    where: {
+      id: deviceId,
+      userId,
+    },
   });
-
-  if (!device) {
-    return null;
-  }
-
-  return device;
 }
 
 export const aiService = {
-  async explainSsl(userId, deviceId, promptText = '') {
+  async explainSsl(userId, deviceId, prompt = '') {
     const device = await getDeviceContext(userId, deviceId);
     if (!device) {
-      return buildFallbackSummary('ssl', {});
+      throw new Error('Device not found');
     }
 
-    const ssl = await safePrismaCall(prisma.sSLStatus, 'findFirst', {
+    const sslAudit = await prisma.sSLStatus.findFirst({
       where: { deviceId },
       orderBy: { checkedAt: 'desc' },
     });
 
-    if (!ssl) {
-      return buildFallbackSummary('ssl', { ssl: {} });
-    }
+    const fallback = buildFallbackSummary('ssl', { device, ssl: sslAudit }, prompt);
 
-    const fallback = buildFallbackSummary('ssl', { ssl }, promptText);
-    return generateInsight('ssl', { ssl }, fallback, promptText);
+    try {
+      const aiResponse = await aiClient.generateContent(prompt, { kind: 'ssl', device, ssl: sslAudit });
+      return sanitizeAiResponse(aiResponse, fallback);
+    } catch (error) {
+      return fallback;
+    }
   },
 
-  async explainPorts(userId, deviceId, promptText = '') {
+  async explainPorts(userId, deviceId, prompt = '') {
     const device = await getDeviceContext(userId, deviceId);
     if (!device) {
-      return buildFallbackSummary('ports', {});
+      throw new Error('Device not found');
     }
 
-    const portScan = await safePrismaCall(prisma.portScanLog, 'findFirst', {
+    const portLog = await prisma.portScanLog.findFirst({
       where: { deviceId },
       orderBy: { checkedAt: 'desc' },
     });
 
-    if (!portScan) {
-      return buildFallbackSummary('ports', { portScan: {} });
-    }
+    const portScan = { openPorts: portLog ? portLog.openPorts : [], checkedAt: portLog?.checkedAt };
+    const fallback = buildFallbackSummary('ports', { device, portScan }, prompt);
 
-    const fallback = buildFallbackSummary('ports', { portScan }, promptText);
-    return generateInsight('ports', { portScan }, fallback, promptText);
+    try {
+      const aiResponse = await aiClient.generateContent(prompt, { kind: 'ports', device, portScan });
+      return sanitizeAiResponse(aiResponse, fallback);
+    } catch (error) {
+      return fallback;
+    }
   },
 
-  async explainHealth(userId, deviceId, promptText = '') {
+  async explainHealth(userId, deviceId, prompt = '') {
     const device = await getDeviceContext(userId, deviceId);
     if (!device) {
-      return buildFallbackSummary('health', {});
+      throw new Error('Device not found');
     }
 
-    const healthLogs = await safePrismaCall(prisma.healthLog, 'findMany', {
+    const healthHistory = await prisma.healthLog.findMany({
       where: { deviceId },
       orderBy: { checkedAt: 'desc' },
-      take: 12,
+      take: 20,
     });
 
-    if (!healthLogs.length) {
-      return buildFallbackSummary('health', { issueCount: 0 });
-    }
+    const analytics = await analyticsService.getDeviceMetrics(deviceId, 24);
+    const fallback = buildFallbackSummary('health', { device, healthHistory, metrics: analytics }, prompt);
 
-    const issueCount = healthLogs.filter((log) => log.status === 'DOWN' || /timeout|refused|reset|dns|error/i.test(log.message || '')).length;
-    const fallback = buildFallbackSummary('health', { issueCount }, promptText);
-    return generateInsight('health', { healthLogs }, fallback, promptText);
+    try {
+      const aiResponse = await aiClient.generateContent(prompt, { kind: 'health', device, healthHistory, metrics: analytics });
+      return sanitizeAiResponse(aiResponse, fallback);
+    } catch (error) {
+      return fallback;
+    }
   },
 
-  async analyzeDevice(userId, deviceId, promptText = '') {
+  async analyzeDevice(userId, deviceId, prompt = '') {
     const device = await getDeviceContext(userId, deviceId);
     if (!device) {
-      return buildFallbackSummary('device', {});
+      throw new Error('Device not found');
     }
 
-    const [metrics, ssl, portScan, healthLogs] = await Promise.all([
+    const [healthHistory, sslAudit, portLog, analytics] = await Promise.all([
+      prisma.healthLog.findMany({
+        where: { deviceId },
+        orderBy: { checkedAt: 'desc' },
+        take: 20,
+      }),
+      prisma.sSLStatus.findFirst({
+        where: { deviceId },
+        orderBy: { checkedAt: 'desc' },
+      }),
+      prisma.portScanLog.findFirst({
+        where: { deviceId },
+        orderBy: { checkedAt: 'desc' },
+      }),
       analyticsService.getDeviceMetrics(deviceId, 24),
-      safePrismaCall(prisma.sSLStatus, 'findFirst', {
-        where: { deviceId },
-        orderBy: { checkedAt: 'desc' },
-      }),
-      safePrismaCall(prisma.portScanLog, 'findFirst', {
-        where: { deviceId },
-        orderBy: { checkedAt: 'desc' },
-      }),
-      safePrismaCall(prisma.healthLog, 'findMany', {
-        where: { deviceId },
-        orderBy: { checkedAt: 'desc' },
-        take: 10,
-      }),
     ]);
 
-    const reportSummary = metrics?.summary || null;
-    const fallback = buildFallbackSummary('device', { metrics, ssl, portScan, healthLogs }, promptText);
-    return generateInsight('device', { metrics, ssl, portScan, healthLogs, reportSummary }, fallback, promptText);
+    const portScan = { openPorts: portLog ? portLog.openPorts : [], checkedAt: portLog?.checkedAt };
+    const contextData = { device, healthLogs: healthHistory, ssl: sslAudit, portScan, metrics: analytics };
+    const fallback = buildFallbackSummary('device', contextData, prompt);
+
+    try {
+      const aiResponse = await aiClient.generateContent(prompt, { kind: 'device', ...contextData });
+      return sanitizeAiResponse(aiResponse, fallback);
+    } catch (error) {
+      return fallback;
+    }
   },
 
   async explainReport(userId, reportId) {
-    const cacheKey = reportId || 'latest';
-    const existingSnapshot = reportSnapshots.get(cacheKey);
-    let reportData = existingSnapshot;
+    const reportData = await reportService.getReportData(userId, reportId);
+    reportSnapshots.set(reportId, reportData);
 
-    if (!reportData) {
-      reportData = await reportService.getReportData(userId);
-      reportSnapshots.set(cacheKey, reportData);
+    const fallback = buildFallbackSummary('report', reportData);
+    try {
+      const aiResponse = await aiClient.generateContent('Summarize executive SLA report', { kind: 'report', ...reportData });
+      return sanitizeAiResponse(aiResponse, fallback);
+    } catch (error) {
+      return fallback;
+    }
+  },
+
+  async getAnomalies(userId, deviceId = null) {
+    const where = {
+      device: { userId },
+    };
+    if (deviceId) {
+      where.deviceId = deviceId;
     }
 
-    const fallback = buildFallbackSummary('report', { report: reportData });
-    return generateInsight('report', { reportId: cacheKey, report: reportData }, fallback);
+    return prisma.anomaly.findMany({
+      where,
+      include: {
+        device: {
+          select: { id: true, name: true, host: true, type: true },
+        },
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 20,
+    });
+  },
+
+  async getIncidents(userId) {
+    return prisma.incident.findMany({
+      where: {
+        device: { userId },
+        status: { in: ['OPEN', 'INVESTIGATING'] },
+      },
+      include: {
+        device: {
+          select: { id: true, name: true, host: true, type: true },
+        },
+      },
+      orderBy: { priorityScore: 'desc' },
+      take: 10,
+    });
+  },
+
+  async triggerDeviceIncidentAnalysis(userId, deviceId) {
+    const device = await getDeviceContext(userId, deviceId);
+    if (!device) {
+      throw new Error('Device not found');
+    }
+
+    const healthLogs = await prisma.healthLog.findMany({
+      where: { deviceId },
+      orderBy: { checkedAt: 'desc' },
+      take: 20,
+    });
+
+    const chronLogs = [...healthLogs].reverse();
+    const anomalyRes = await aiClient.detectAnomaly(device, chronLogs);
+
+    const downCount = chronLogs.filter((h) => h.status === 'DOWN').length;
+    const errorRate = chronLogs.length > 0 
+      ? chronLogs.filter((h) => h.status === 'DOWN' || (h.responseCode && h.responseCode >= 400)).length / chronLogs.length 
+      : 0.0;
+
+    const priorityRes = await aiClient.prioritizeAlert(
+      anomalyRes.severity,
+      chronLogs.length,
+      downCount,
+      errorRate,
+      downCount,
+      device.name,
+      anomalyRes.anomaly_score
+    );
+
+    const llmAnalysis = await aiClient.analyzeIncident(
+      device,
+      anomalyRes.anomaly_score,
+      priorityRes.priority,
+      anomalyRes.detection_reason,
+      chronLogs.slice(-10),
+      anomalyRes.metrics_evaluated
+    );
+
+    return {
+      device,
+      anomaly: anomalyRes,
+      priority: priorityRes,
+      analysis: llmAnalysis,
+    };
+  },
+
+  async generateDeviceTimelineSummary(userId, deviceId) {
+    const device = await getDeviceContext(userId, deviceId);
+    if (!device) {
+      throw new Error('Device not found');
+    }
+
+    const logs = await prisma.healthLog.findMany({
+      where: { deviceId },
+      orderBy: { checkedAt: 'asc' },
+      take: 40,
+    });
+
+    const startTime = logs.length > 0 ? logs[0].checkedAt?.toISOString() : null;
+    const endTime = logs.length > 0 ? logs[logs.length - 1].checkedAt?.toISOString() : null;
+
+    return aiClient.summarizeTimeline(device.name, logs, startTime, endTime);
+  },
+
+  async generatePlaybook(userId, deviceId, payload = {}) {
+    const device = await getDeviceContext(userId, deviceId);
+    if (!device) {
+      throw new Error('Device not found');
+    }
+
+    return aiClient.generatePlaybook(
+      device.name,
+      device.host,
+      device.type,
+      payload.summary || `Incident degradation observed on ${device.name}`,
+      payload.possibleCauses || ['Latency elevation', 'Socket connection timeout']
+    );
   },
 };

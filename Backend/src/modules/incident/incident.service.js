@@ -1,67 +1,103 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../../config/database.js';
 
 export const incidentService = {
   /**
-   * State Transition: OPERATIONAL -> INCIDENT_OPEN
+   * Open an incident with AI priority & structured LLM analysis context
    */
-  async openIncident(deviceId, type = 'DOWNTIME', errorMsg = null) {
-    // 1. Check if an incident is already open (Idempotency)
+  async openIncident(deviceId, type = 'DOWNTIME', errorMsg = null, aiData = {}) {
     const existingIncident = await prisma.incident.findFirst({
       where: {
         deviceId,
-        type,
-        status: 'OPEN'
-      }
+        status: 'OPEN',
+      },
     });
 
+    const updatePayload = {
+      type,
+      error: errorMsg || existingIncident?.error || 'Degraded monitoring status',
+      priority: aiData.severity || existingIncident?.priority || 'MEDIUM',
+      priorityScore: aiData.priorityScore ?? existingIncident?.priorityScore ?? 5.0,
+      priorityReason: aiData.priorityReason || existingIncident?.priorityReason || null,
+      summary: aiData.incident_summary || existingIncident?.summary || null,
+      possibleCauses: aiData.possible_causes || existingIncident?.possibleCauses || [],
+      recommendedActions: aiData.recommended_investigations || existingIncident?.recommendedActions || [],
+      confidence: aiData.confidence ?? existingIncident?.confidence ?? 0.8,
+      anomalyId: aiData.anomalyId || existingIncident?.anomalyId || null,
+    };
+
     if (existingIncident) {
-      return existingIncident;
+      const updated = await prisma.incident.update({
+        where: { id: existingIncident.id },
+        data: updatePayload,
+      });
+      return updated;
     }
 
-    // 2. Create the new Incident
     const newIncident = await prisma.incident.create({
       data: {
         deviceId,
-        type,
         status: 'OPEN',
-        error: errorMsg,
         openedAt: new Date(),
-      }
+        ...updatePayload,
+      },
     });
 
-    console.log(`🚨 [INCIDENT OPENED] Device ${deviceId} | Type: ${type}`);
+    console.log(`🚨 [INCIDENT OPENED] Device ${deviceId} | Type: ${type} | Priority: ${newIncident.priority}`);
     return newIncident;
   },
 
-  /**
-   * State Transition: INCIDENT_OPEN -> OPERATIONAL
-   */
-  async resolveIncident(deviceId, type = 'DOWNTIME') {
-    // 1. Find the currently open incident
-    const openIncident = await prisma.incident.findFirst({
+  async resolveIncident(deviceId) {
+    const openIncidents = await prisma.incident.findMany({
       where: {
         deviceId,
-        type,
-        status: 'OPEN'
-      }
+        status: 'OPEN',
+      },
     });
 
-    if (!openIncident) {
+    if (!openIncidents || openIncidents.length === 0) {
       return null;
     }
 
-    // 2. Mark it as resolved
-    const resolvedIncident = await prisma.incident.update({
-      where: { id: openIncident.id },
-      data: {
-        status: 'RESOLVED',
-        resolvedAt: new Date(),
-      }
-    });
+    const resolved = [];
+    for (const incident of openIncidents) {
+      const res = await prisma.incident.update({
+        where: { id: incident.id },
+        data: {
+          status: 'RESOLVED',
+          resolvedAt: new Date(),
+        },
+      });
+      resolved.push(res);
+      console.log(`✅ [INCIDENT RESOLVED] Device ${deviceId} | Incident ID: ${incident.id}`);
+    }
 
-    console.log(`✅ [INCIDENT RESOLVED] Device ${deviceId} | Type: ${type}`);
-    return resolvedIncident;
-  }
+    return resolved;
+  },
+
+  async getDeviceIncidents(deviceId, limit = 20) {
+    return prisma.incident.findMany({
+      where: { deviceId },
+      orderBy: { openedAt: 'desc' },
+      take: limit,
+      include: {
+        anomaly: true,
+        device: {
+          select: { id: true, name: true, host: true },
+        },
+      },
+    });
+  },
+
+  async getActiveIncidents() {
+    return prisma.incident.findMany({
+      where: { status: 'OPEN' },
+      orderBy: [{ priorityScore: 'desc' }, { openedAt: 'desc' }],
+      include: {
+        anomaly: true,
+        device: {
+          select: { id: true, name: true, host: true },
+        },
+      },
+    });
+  },
 };

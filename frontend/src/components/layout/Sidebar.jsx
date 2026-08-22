@@ -1,11 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Server, Settings, Activity, Cpu, LogOut, Sparkles, BookOpen, User } from 'lucide-react';
+import { 
+  Zap, 
+  LayoutDashboard, 
+  Server, 
+  ShieldAlert, 
+  Sparkles, 
+  Terminal, 
+  Settings, 
+  BookOpen, 
+  Moon, 
+  LogOut,
+  ChevronLeft,
+  Menu
+} from 'lucide-react';
 import { authService } from '../../services/auth.service.js';
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('user');
@@ -17,31 +31,49 @@ export default function Sidebar() {
   }, []);
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Devices', path: '/devices', icon: Server },
-    { name: 'AI Assistant', path: '/ai', icon: Sparkles },
-    { name: 'Documentation', path: '/docs', icon: BookOpen },
+    { name: 'AI Insights', path: '/ai', icon: Sparkles, badge: 'Beta' },
+    { name: 'Incidents & Alerts', path: '/incidents', icon: ShieldAlert },
+    { name: 'System Logs', path: '/logs', icon: Terminal },
     { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Documentation', path: '/docs', icon: BookOpen },
   ];
 
   return (
-    <aside className="w-72 bg-slate-950 border-r border-slate-900 text-slate-100 min-h-screen p-6 flex flex-col justify-between select-none">
+    <aside 
+      className={`bg-[#0B0F19] border-r border-[#1E293B]/80 text-slate-300 min-h-screen flex flex-col justify-between transition-all duration-300 select-none z-30 ${
+        collapsed ? 'w-20 p-4' : 'w-64 p-5'
+      }`}
+    >
       <div>
         {/* Brand Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 rounded-2xl shadow-lg shadow-indigo-500/25 border border-indigo-400/20">
-            <Activity className="text-white" size={24} />
+        <div className="flex items-center justify-between mb-8 px-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-[#6366F1] text-white rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-center">
+              <Zap size={20} className="fill-current" />
+            </div>
+            {!collapsed && (
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+                  NetScope
+                </h1>
+                <span className="text-[10px] font-mono text-slate-400 font-semibold uppercase tracking-wider block">
+                  Observability AI
+                </span>
+              </div>
+            )}
           </div>
-          <div>
-            <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
-              NetScope
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            </h1>
-            <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-slate-400">Developer Monitoring</p>
-          </div>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/60 transition hidden md:block"
+            title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {collapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
+          </button>
         </div>
 
-        {/* Navigation Items */}
+        {/* Navigation Section */}
         <nav className="space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -50,22 +82,31 @@ export default function Sidebar() {
                 key={item.name}
                 to={item.path}
                 className={({ isActive }) =>
-                  `group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  `group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/20 font-semibold border border-indigo-400/30'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/80 border border-transparent hover:border-slate-800'
+                      ? 'bg-[#4F46E5] text-white shadow-md shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-[#1E293B]/50'
                   }`
                 }
+                title={collapsed ? item.name : undefined}
               >
                 {({ isActive }) => (
                   <>
-                    <Icon
-                      size={18}
-                      className={`transition-colors duration-200 ${
-                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-400'
-                      }`}
-                    />
-                    <span className="text-sm font-medium tracking-wide">{item.name}</span>
+                    <div className="flex items-center gap-3 truncate">
+                      <Icon
+                        size={17}
+                        className={`transition-colors shrink-0 ${
+                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-400'
+                        }`}
+                      />
+                      {!collapsed && <span className="truncate">{item.name}</span>}
+                    </div>
+
+                    {!collapsed && item.badge && (
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#6366F1]/20 text-[#818CF8] border border-[#6366F1]/30 uppercase tracking-wider">
+                        {item.badge}
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>
@@ -74,29 +115,45 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* User Session Footer Card */}
-      <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 space-y-3 backdrop-blur-xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30">
-              {user?.fullName?.charAt(0) || user?.username?.charAt(0) || <User size={14} />}
+      {/* Bottom Footer Options */}
+      <div className="space-y-3 pt-4 border-t border-[#1E293B]/60">
+        {/* Dark Mode Selector */}
+        {!collapsed && (
+          <div className="flex items-center justify-between px-3 py-2 bg-[#111827] border border-[#1E293B] rounded-xl text-xs text-slate-300">
+            <div className="flex items-center gap-2">
+              <Moon size={14} className="text-indigo-400" />
+              <span className="font-semibold text-slate-300">Dark Mode</span>
             </div>
-            <div className="truncate max-w-[130px]">
-              <p className="text-xs font-bold text-white truncate">{user?.fullName || user?.username || 'Operator'}</p>
-              <p className="text-[10px] font-mono text-slate-400 truncate">{user?.email || 'Connected'}</p>
+            <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase">Active</span>
+          </div>
+        )}
+
+        {/* User Profile Card */}
+        <div className="flex items-center justify-between p-2.5 bg-[#111827] border border-[#1E293B] rounded-xl">
+          <div className="flex items-center gap-2.5 truncate">
+            <div className="w-8 h-8 rounded-full bg-[#6366F1] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+              {user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'D'}
             </div>
+            {!collapsed && (
+              <div className="truncate">
+                <p className="text-xs font-semibold text-white truncate">{user?.fullName || user?.username || 'NetScope Admin'}</p>
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-semibold">Operator</p>
+              </div>
+            )}
           </div>
 
-          <button
-            onClick={async () => {
-              await authService.logout();
-              navigate('/login');
-            }}
-            title="Sign Out"
-            className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-          >
-            <LogOut size={16} />
-          </button>
+          {!collapsed && (
+            <button
+              onClick={async () => {
+                await authService.logout();
+                navigate('/login');
+              }}
+              title="Sign Out"
+              className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition cursor-pointer"
+            >
+              <LogOut size={15} />
+            </button>
+          )}
         </div>
       </div>
     </aside>
