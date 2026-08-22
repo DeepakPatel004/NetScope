@@ -7,25 +7,25 @@ NetScope (InfraScope) is a self-hosted, enterprise-ready infrastructure observab
 ## 📸 Application Screenshots & Visual Tour
 
 ### 1. Real-time Telemetry & Overview Dashboard
-![Overview Dashboard](docs/screenshots/dashboard.png)
+![Overview Dashboard](Docs/screenshots/dashboard.png)
 *Features high-density KPI cards, interactive Recharts latency area charts with gradient fill, device status breakdown donut, and real-time active monitor controls.*
 
 ---
 
 ### 2. Monitored Devices & Target Management
-![Device Management](docs/screenshots/devices.png)
+![Device Management](Docs/screenshots/devices.png)
 *Configure target websites, REST APIs, and IP addresses with custom check frequencies (30s to 60m), status indicators, and one-click manual diagnostic sweeps.*
 
 ---
 
 ### 3. AI Assistant & Telemetry Reasoning Engine
-![AI Diagnostic Assistant](docs/screenshots/ai_assistant.png)
+![AI Diagnostic Assistant](Docs/screenshots/ai_assistant.png)
 *Interactive generative AI console powered by Groq to analyze raw telemetry logs, SSL security validity, open TCP ports, and issue actionable fix recommendations.*
 
 ---
 
 ### 4. Incidents & Security Alerts Hub
-![Incidents and Security Alerts](docs/screenshots/incidents.png)
+![Incidents and Security Alerts](Docs/screenshots/incidents.png)
 *Prioritized infrastructure incidents with automated ML isolation forest anomaly scores, severity classification (`CRITICAL`, `HIGH`, `MEDIUM`), step-by-step incident progression timelines, and automated SRE CLI remediation playbooks.*
 
 ---
