@@ -12,9 +12,13 @@ const SEVERITY_BADGES = {
 export default function ActiveIncidentsPanel({ incidents = [], devices = [], onSelectIncident }) {
   const navigate = useNavigate();
 
-  // Filter real open incidents or DOWN devices
-  const displayList = incidents.length > 0
-    ? incidents.slice(0, 3).map((i) => {
+  // Filter real open incidents for existing devices only
+  const validIncidents = incidents.filter(i => i && (i.device || typeof i.service === 'string'));
+  
+  const displayList = devices.length === 0 
+    ? []
+    : validIncidents.length > 0
+    ? validIncidents.slice(0, 3).map((i) => {
         const titleStr = typeof i.summary === 'string' ? i.summary : (i.error || 'Infrastructure Metric Degradation');
         const serviceStr = typeof i.service === 'string' ? i.service : (i.device?.name || i.device?.host || 'Monitored Service');
         return {
@@ -26,7 +30,7 @@ export default function ActiveIncidentsPanel({ incidents = [], devices = [], onS
           raw: i
         };
       })
-    : devices.filter(d => d.status === 'DOWN').map(d => ({
+    : devices.filter(d => d && d.status === 'DOWN').map(d => ({
         id: `inc-down-${d.id}`,
         severity: 'CRITICAL',
         title: 'Endpoint Connection Loss',

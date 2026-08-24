@@ -38,10 +38,13 @@ class IncidentAnalysisRequest(BaseModel):
 class IncidentAnalysisResponse(BaseModel):
     incident_summary: str
     severity: str
-    observations: List[str]
-    possible_causes: List[str]
-    recommended_investigations: List[str]
-    confidence: float
+    risk_level: Optional[str] = "MEDIUM"
+    business_impact: Optional[str] = "Service response degradation impacting target latency"
+    recommended_action: Optional[str] = "restart_container"
+    observations: List[str] = Field(default_factory=list)
+    possible_causes: List[str] = Field(default_factory=list)
+    recommended_investigations: List[str] = Field(default_factory=list)
+    confidence: float = 0.85
 
 class AlertPriorityRequest(BaseModel):
     severity: str = "MEDIUM"

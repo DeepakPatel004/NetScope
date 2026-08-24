@@ -204,6 +204,31 @@ export const aiService = {
     }
   },
 
+  async chat(userId, prompt, deviceId = null) {
+    let device = null;
+    if (deviceId) {
+      device = await prisma.device.findFirst({ where: { id: deviceId, userId } }).catch(() => null);
+    }
+    
+    const fallback = {
+      summary: `NetScope SRE Assistant analysis for: "${prompt}"`,
+      recommendations: ['Review automated monitoring cycles', 'Inspect target host logs']
+    };
+
+    try {
+      const response = await aiClient.generateContent(prompt, { kind: 'chat', device });
+      if (response && response.summary) {
+        return {
+          summary: response.summary,
+          recommendations: Array.isArray(response.recommendations) ? response.recommendations : []
+        };
+      }
+      return fallback;
+    } catch (error) {
+      return fallback;
+    }
+  },
+
   async getAnomalies(userId, deviceId = null) {
     const where = {
       device: { userId },
@@ -212,7 +237,7 @@ export const aiService = {
       where.deviceId = deviceId;
     }
 
-    return prisma.anomaly.findMany({
+    const records = await prisma.anomaly.findMany({
       where,
       include: {
         device: {
@@ -222,21 +247,47 @@ export const aiService = {
       orderBy: { timestamp: 'desc' },
       take: 20,
     });
+
+    return records.filter((r) => r.device !== null);
   },
 
   async getIncidents(userId) {
-    return prisma.incident.findMany({
+    const records = await prisma.incident.findMany({
       where: {
         device: { userId },
-        status: { in: ['OPEN', 'INVESTIGATING'] },
       },
       include: {
         device: {
-          select: { id: true, name: true, host: true, type: true },
+          select: { id: true, name: true, host: true, type: true, agentStatus: true, containers: true, capabilities: true },
+        },
+        recoveryActions: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
         },
       },
-      orderBy: { priorityScore: 'desc' },
-      take: 10,
+      orderBy: { openedAt: 'desc' },
+      take: 20,
+    });
+
+    return records.filter((r) => r.device !== null);
+  },
+
+  async resolveIncident(userId, incidentId) {
+    const incident = await prisma.incident.findUnique({
+      where: { id: incidentId },
+      include: { device: true },
+    });
+
+    if (!incident || incident.device.userId !== userId) {
+      throw new Error('Incident not found or access denied');
+    }
+
+    return prisma.incident.update({
+      where: { id: incidentId },
+      data: {
+        status: 'RESOLVED',
+        resolvedAt: new Date(),
+      },
     });
   },
 

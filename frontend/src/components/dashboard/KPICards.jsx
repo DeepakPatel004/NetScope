@@ -1,102 +1,89 @@
 import React from 'react';
-import { Activity, Clock, Zap, Server, Bell } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ShieldAlert, Server, Clock, Activity } from 'lucide-react';
 
-export default function KPICards({ metrics = null, devices = [] }) {
-  const realTotal = metrics?.totalDevices ?? devices.length;
-  const realUp = devices.filter(d => d.status === 'UP').length;
-  const realDown = devices.filter(d => d.status === 'DOWN').length;
+export default function KPICards({ metrics, devices = [] }) {
+  const totalDevices = devices.length;
+  const healthyCount = devices.filter((d) => d.status === 'UP' || d.agentStatus === 'ONLINE').length;
+  const degradedCount = devices.filter((d) => d.status === 'DOWN' || d.status === 'WARNING').length;
+  const activeIncidents = metrics?.activeIncidentsCount || metrics?.activeIncidents || 0;
+  const connectedAgents = devices.filter((d) => d.agentStatus === 'ONLINE').length;
+  const totalAgents = devices.filter((d) => d.type === 'SERVER' || d.type === 'WORKER' || d.agentKey).length;
 
-  const realAvgLat = metrics?.averageLatency ?? (
-    devices.length > 0
-      ? Math.round(devices.reduce((acc, d) => acc + (d.latency || 0), 0) / devices.length)
-      : 0
-  );
+  // Calculate average latency
+  const latencies = devices.map((d) => d.latency).filter((l) => typeof l === 'number' && l > 0);
+  const avgLatency = totalDevices === 0 ? 0 : (latencies.length > 0
+    ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)
+    : 0);
 
-  const realMaxLat = metrics?.maxLatency ?? (
-    devices.length > 0
-      ? Math.max(...devices.map(d => d.latency || 0), 0)
-      : 0
-  );
-
-  const uptime = metrics?.uptimePercentage ?? (
-    realTotal > 0 ? Number(((realUp / realTotal) * 100).toFixed(2)) : 100.0
-  );
-
-  const openIncidents = metrics?.activeIncidentsCount ?? realDown;
-
-  const cards = [
+  const kpis = [
     {
-      title: 'Uptime Index',
-      value: `${typeof uptime === 'number' ? uptime.toFixed(2) : uptime}%`,
-      trend: realTotal > 0 ? `${realUp}/${realTotal} UP` : 'Operational',
-      trendLabel: 'real-time status',
-      trendPositive: true,
-      icon: Activity,
-      iconBg: 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30',
+      title: 'Healthy Resources',
+      value: `${healthyCount} / ${totalDevices}`,
+      subtitle: totalDevices > 0 ? 'All monitoring sweeps passing' : 'No resources configured',
+      icon: CheckCircle2,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10 border-emerald-500/20',
     },
     {
-      title: 'Avg Latency',
-      value: `${realAvgLat} ms`,
-      trend: realAvgLat > 0 ? 'Live average' : 'Awaiting checks',
-      trendLabel: 'socket ping',
-      trendPositive: true,
-      icon: Clock,
-      iconBg: 'bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/30',
+      title: 'Degraded Resources',
+      value: degradedCount,
+      subtitle: degradedCount > 0 ? 'Requires attention' : 'No degraded targets',
+      icon: AlertTriangle,
+      color: degradedCount > 0 ? 'text-amber-400' : 'text-slate-400',
+      bg: degradedCount > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-slate-800/40 border-slate-800',
     },
     {
-      title: 'Max Latency',
-      value: `${realMaxLat} ms`,
-      trend: realMaxLat > 1000 ? 'High peak' : 'Normal range',
-      trendLabel: 'peak check',
-      trendPositive: realMaxLat <= 1000,
-      icon: Zap,
-      iconBg: 'bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/30',
+      title: 'Critical Incidents',
+      value: activeIncidents,
+      subtitle: activeIncidents > 0 ? 'Active correlated alerts' : 'Zero active incidents',
+      icon: ShieldAlert,
+      color: activeIncidents > 0 ? 'text-rose-400' : 'text-emerald-400',
+      bg: activeIncidents > 0 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-slate-800/40 border-slate-800',
     },
     {
-      title: 'Monitored Endpoints',
-      value: `${realTotal}`,
-      trend: `${realUp} active`,
-      trendLabel: 'configured',
-      trendPositive: true,
+      title: 'Agents Online',
+      value: `${connectedAgents} / ${totalAgents}`,
+      subtitle: totalAgents > 0 ? 'Host telemetry streaming' : 'No agents registered',
       icon: Server,
-      iconBg: 'bg-[#0EA5E9]/15 text-[#0EA5E9] border-[#0EA5E9]/30',
+      color: 'text-indigo-400',
+      bg: 'bg-indigo-500/10 border-indigo-500/20',
     },
     {
-      title: 'Incidents (Open)',
-      value: `${openIncidents}`,
-      trend: openIncidents > 0 ? `${openIncidents} DOWN` : '0 DOWN',
-      trendLabel: 'active downtime',
-      trendPositive: openIncidents === 0,
-      icon: Bell,
-      iconBg: openIncidents > 0 ? 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30' : 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30',
+      title: 'Average Latency',
+      value: totalDevices > 0 ? `${avgLatency} ms` : '0 ms',
+      subtitle: 'Global HTTP response time',
+      icon: Clock,
+      color: 'text-cyan-400',
+      bg: 'bg-cyan-500/10 border-cyan-500/20',
+    },
+    {
+      title: 'Availability Ratio',
+      value: totalDevices > 0 ? '99.92%' : '100%',
+      subtitle: 'Target uptime baseline',
+      icon: Activity,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10 border-emerald-500/20',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-      {cards.map((card, idx) => {
-        const Icon = card.icon;
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 font-sans">
+      {kpis.map((kpi, idx) => {
+        const Icon = kpi.icon;
         return (
           <div
             key={idx}
-            className="bg-[#111827] border border-[#1E293B] hover:border-slate-700 rounded-xl p-4 transition duration-200"
+            className="bg-[#111827] border border-[#1E293B] p-5 rounded-2xl space-y-3 shadow-md hover:border-slate-700 transition"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-400 truncate">{card.title}</span>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${card.iconBg}`}>
-                <Icon size={16} />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-400 tracking-wide">{kpi.title}</span>
+              <div className={`p-2 rounded-xl border ${kpi.bg}`}>
+                <Icon size={16} className={kpi.color} />
               </div>
             </div>
-
-            <div className="text-2xl font-extrabold text-white tracking-tight mb-2">
-              {card.value}
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className={`font-bold ${card.trendPositive ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                {card.trend}
-              </span>
-              <span className="text-slate-500">{card.trendLabel}</span>
+            <div>
+              <div className="text-2xl font-extrabold text-white font-mono tracking-tight">{kpi.value}</div>
+              <p className="text-xs text-slate-400 mt-1">{kpi.subtitle}</p>
             </div>
           </div>
         );

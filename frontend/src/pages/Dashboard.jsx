@@ -1,13 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Header from '../components/layout/Header.jsx';
 import KPICards from '../components/dashboard/KPICards.jsx';
+import ResourceHealthTable from '../components/dashboard/ResourceHealthTable.jsx';
 import LatencyOverviewChart from '../components/dashboard/LatencyOverviewChart.jsx';
-import DeviceStatusDonut from '../components/dashboard/DeviceStatusDonut.jsx';
 import ActiveIncidentsPanel from '../components/dashboard/ActiveIncidentsPanel.jsx';
 import AIInsightCard from '../components/dashboard/AIInsightCard.jsx';
-import SupportingMetrics from '../components/dashboard/SupportingMetrics.jsx';
-import RecentAlertsTable from '../components/dashboard/RecentAlertsTable.jsx';
-import UptimeHistoryChart from '../components/dashboard/UptimeHistoryChart.jsx';
 import IncidentDetailsModal from '../components/incidents/IncidentDetailsModal.jsx';
 
 import { dashboardService } from '../services/dashboard.service.js';
@@ -56,23 +53,10 @@ export default function Dashboard() {
     toast.success('Dashboard metrics synced.');
   };
 
-  // Compute real donut breakdown from real devices
-  const healthyCount = devices.filter(d => d.status === 'UP').length;
-  const warningCount = devices.filter(d => d.status === 'WARNING').length;
-  const criticalCount = devices.filter(d => d.status === 'DOWN').length;
-  const unknownCount = devices.filter(d => !d.status || d.status === 'UNKNOWN').length;
-  const totalCount = devices.length;
-
-  const realStatusData = totalCount > 0 ? [
-    { name: 'Healthy', value: healthyCount, pct: `${Math.round((healthyCount / totalCount) * 100)}%` },
-    { name: 'Warning', value: warningCount, pct: `${Math.round((warningCount / totalCount) * 100)}%` },
-    { name: 'Critical', value: criticalCount, pct: `${Math.round((criticalCount / totalCount) * 100)}%` },
-    { name: 'Unknown', value: unknownCount, pct: `${Math.round((unknownCount / totalCount) * 100)}%` },
-  ] : null;
-
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-slate-100 p-6 md:p-8 space-y-6">
-      {/* 1. Dashboard Top Header & Control Bar */}
+    <div className="min-h-screen bg-[#0B0F19] text-slate-100 p-8 md:p-10 space-y-10 max-w-[1500px] mx-auto font-sans">
+      
+      {/* SECTION 1: Page Header */}
       <Header
         onRefresh={handleManualRefresh}
         loading={loading}
@@ -82,39 +66,47 @@ export default function Dashboard() {
         setRefreshInterval={setRefreshInterval}
       />
 
-      {/* 2. 5 KPI Metrics Cards Row */}
-      <KPICards metrics={summary} devices={devices} />
+      {/* SECTION 2: Key Platform Status */}
+      <section className="space-y-4">
+        <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
+          01 / Key Platform Status
+        </h2>
+        <KPICards metrics={summary} devices={devices} />
+      </section>
 
-      {/* 3. Main Row 1: Latency Overview Chart & Right Panels (Device Status + Active Incidents) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Latency Overview Chart (Left 7 Cols) */}
-        <div className="lg:col-span-7">
-          <LatencyOverviewChart devices={devices} />
-        </div>
+      {/* SECTION 3: Resource Health Matrix */}
+      <section className="space-y-4">
+        <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
+          02 / Resource Health Matrix
+        </h2>
+        <ResourceHealthTable devices={devices} incidents={incidents} />
+      </section>
 
-        {/* Right Stacked Column (Right 5 Cols): Device Status Donut + Active Incidents */}
-        <div className="lg:col-span-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
-          <DeviceStatusDonut statusData={realStatusData} totalCount={totalCount} />
+      {/* SECTION 4: Service Performance Trends */}
+      <section className="space-y-4">
+        <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
+          03 / Performance Trends
+        </h2>
+        <LatencyOverviewChart devices={devices} />
+      </section>
+
+      {/* SECTION 5 & 6: Active Incidents & AI Insight */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-6 space-y-4">
+          <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
+            04 / Active Operational Incidents
+          </h2>
           <ActiveIncidentsPanel
             incidents={incidents}
             devices={devices}
             onSelectIncident={(inc) => setSelectedIncident(inc)}
           />
         </div>
-      </div>
 
-      {/* 4. Supporting Metric Cards Row (Response Time, Monitored Endpoints, SSL Audits, Uptime Rate) */}
-      <SupportingMetrics metrics={summary} devices={devices} />
-
-      {/* 5. Main Row 2: Recent Alerts Table + AI Insights Beta Card + Uptime History Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Recent Alerts Table (Left 7 Cols) */}
-        <div className="lg:col-span-7">
-          <RecentAlertsTable alerts={incidents} devices={devices} />
-        </div>
-
-        {/* Right Column: AI Insights Beta Panel + Uptime History Bar Chart */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-6 space-y-4">
+          <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
+            05 / AI Telemetry Intelligence
+          </h2>
           <AIInsightCard
             anomaly={anomaly}
             devices={devices}
@@ -132,8 +124,6 @@ export default function Dashboard() {
               setSelectedIncident(matched);
             }}
           />
-
-          <UptimeHistoryChart />
         </div>
       </div>
 

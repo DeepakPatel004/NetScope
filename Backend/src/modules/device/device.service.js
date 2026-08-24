@@ -1,13 +1,21 @@
 import prisma from "../../config/database.js";
 
 export const deviceService = {
-
   // Create a new Device
   async createDevice(userId, deviceData) {
+    const { name, host, type, interval = 30, enabled = true, agentKey, agentStatus, metricsSource } = deviceData;
+
     return await prisma.device.create({
       data: {
-        ...deviceData,
         userId,
+        name,
+        host,
+        type: type || 'WEBSITE',
+        interval: Number(interval) || 30,
+        enabled: enabled ?? true,
+        ...(agentKey ? { agentKey } : {}),
+        ...(agentStatus ? { agentStatus } : {}),
+        ...(metricsSource ? { metricsSource } : {}),
       }
     });
   },
@@ -35,9 +43,21 @@ export const deviceService = {
     const device = await this.getDeviceById(userId, id);
     if (!device) return null;
 
+    const { name, host, type, interval, enabled, agentKey, agentStatus, metricsSource } = data;
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (host !== undefined) updateData.host = host;
+    if (type !== undefined) updateData.type = type;
+    if (interval !== undefined) updateData.interval = Number(interval);
+    if (enabled !== undefined) updateData.enabled = enabled;
+    if (agentKey !== undefined) updateData.agentKey = agentKey;
+    if (agentStatus !== undefined) updateData.agentStatus = agentStatus;
+    if (metricsSource !== undefined) updateData.metricsSource = metricsSource;
+
     return prisma.device.update({
       where: { id },
-      data,
+      data: updateData,
     });
   },
 

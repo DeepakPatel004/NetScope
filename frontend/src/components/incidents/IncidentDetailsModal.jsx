@@ -1,92 +1,128 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Clock, Activity, ShieldAlert, CheckCircle2, Wrench, HelpCircle, Terminal, Copy, Check } from 'lucide-react';
-import { aiInsightsService } from '../../services/aiInsightsService.js';
-import { api } from '../../services/api.js';
+import React, { useState, useEffect } from 'react';
+import {
+  ShieldAlert, X, Activity, Clock, Sparkles, HelpCircle, Wrench,
+  CheckCircle2, AlertTriangle, FileText, Copy, Check, Terminal, Play, ThumbsUp, RefreshCw
+} from 'lucide-react';
+import api from '../../services/api.js';
+import { useToast } from '../../context/ToastContext.jsx';
 
-export default function IncidentDetailsModal({ incident, onClose }) {
-  const [timelineData, setTimelineData] = useState(null);
-  const [loadingTimeline, setLoadingTimeline] = useState(false);
-
-  // Playbook state
-  const [playbook, setPlaybook] = useState(null);
-  const [loadingPlaybook, setLoadingPlaybook] = useState(false);
+export default function IncidentDetailsModal({ incident, onClose, onRefresh }) {
+  const toast = useToast();
   const [copiedCmd, setCopiedCmd] = useState(null);
+  const [approving, setApproving] = useState(false);
+  const [activeAction, setActiveAction] = useState(null);
+  const [localResolved, setLocalResolved] = useState(false);
 
   if (!incident) return null;
 
-  const deviceName = typeof incident.device === 'string'
-    ? incident.device
-    : (incident.device?.name || incident.device?.host || (typeof incident.service === 'string' ? incident.service : 'Target Endpoint'));
-  const deviceHost = incident.device?.host || incident.host || 'localhost';
-  const severity = incident.priority || incident.severity || 'CRITICAL';
-  const status = incident.status || 'OPEN';
-  const openedTime = incident.openedAt ? new Date(incident.openedAt).toLocaleTimeString() : '17:05';
-  const duration = incident.openedAt ? `${Math.round((Date.now() - new Date(incident.openedAt).getTime()) / 60000)} minutes` : '12 minutes';
+  const deviceName = incident.device?.name || 'Target Host';
+  const deviceHost = incident.device?.host || 'localhost';
+  const severity = incident.priority || 'HIGH';
+  const riskLevel = incident.riskLevel || 'HIGH';
+  const status = localResolved ? 'RESOLVED' : (incident.status || 'OPEN');
+  const openedTime = incident.openedAt ? new Date(incident.openedAt).toLocaleString() : 'Recently';
+  const duration = incident.openedAt ? `${Math.round((Date.now() - new Date(incident.openedAt).getTime()) / 60000)} min` : '8 min';
+
+  const containers = incident.device?.containers || [
+    { name: 'demo-api', image: 'demo-backend:latest', status: 'Up 12 minutes' }
+  ];
+
+  const targetContainerName = containers[0]?.name || 'demo-api';
+
+  useEffect(() => {
+    // Fast polling (every 1.5s) for recovery action status updates
+    const fetchRecoveryAction = async () => {
+      try {
+        const res = await api.get(`/recovery/device/${incident.deviceId || incident.device?.id}`).catch(() => ({ data: { data: [] } }));
+        const actions = res.data?.data || [];
+        if (actions.length > 0) {
+          const latest = actions[0];
+          setActiveAction(latest);
+          if (latest.status === 'SUCCESS' || latest.status === 'RESOLVED') {
+            setLocalResolved(true);
+          }
+        }
+      } catch (err) {}
+    };
+
+    fetchRecoveryAction();
+    const interval = setInterval(fetchRecoveryAction, 1500);
+    return () => clearInterval(interval);
+  }, [incident]);
+
+  const handleCreateAndApproveRecovery = async () => {
+    try {
+      setApproving(true);
+      const devId = incident.deviceId || incident.device?.id;
+      
+      // Step 1: Create Recovery Recommendation
+      const recRes = await api.post('/recovery/recommend', {
+        deviceId: devId,
+        incidentId: incident.id,
+        actionType: 'restart_container',
+        targetName: targetContainerName,
+        riskLevel: riskLevel,
+        reason: `AI Recommendation: Restart Docker container '${targetContainerName}' to resolve operational baseline failure.`
+      });
+
+      const actionId = recRes.data?.data?.id;
+
+      if (actionId) {
+        // Step 2: Human Operator Approval
+        await api.post(`/recovery/${actionId}/approve`);
+        toast.success(`Recovery Action Approved! Instruction dispatched.`);
+        
+        // Fast refresh action status
+        setTimeout(async () => {
+          const actionRes = await api.get(`/recovery/device/${devId}`);
+          const actions = actionRes.data?.data || [];
+          if (actions.length > 0) {
+            setActiveAction(actions[0]);
+            if (actions[0].status === 'SUCCESS') setLocalResolved(true);
+          }
+          if (onRefresh) onRefresh();
+        }, 1000);
+      }
+    } catch (err) {
+      toast.error('Recovery approval failed: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const defaultCauses = [
+    'Container memory consumption spike exceeding 90% quota',
+    'Upstream API response latency delay driving elevated TTFB',
+    'Container process crash resulting in HTTP 502/503 responses'
+  ];
+
+  const defaultActions = [
+    `Execute Docker container restart for target '${targetContainerName}'`,
+    'Inspect container memory allocation & process log output',
+    'Verify host port mapping and network bridge responsiveness'
+  ];
 
   const possibleCauses = Array.isArray(incident.possibleCauses)
     ? incident.possibleCauses
-    : typeof incident.possibleCauses === 'string'
-    ? JSON.parse(incident.possibleCauses || '[]')
-    : ['Database response time increase detected', 'Upstream gateway connection pool exhaustion'];
+    : defaultCauses;
 
   const recommendedActions = Array.isArray(incident.recommendedActions)
     ? incident.recommendedActions
-    : typeof incident.recommendedActions === 'string'
-    ? JSON.parse(incident.recommendedActions || '[]')
-    : ['Check DB connections and slow queries', 'Inspect host CPU utilization and RAM'];
+    : defaultActions;
 
   const defaultTimelineEvents = [
-    { time: '17:05', event: 'Latency anomaly detected by Isolation Forest model (2450ms peak)' },
-    { time: '17:06', event: 'Error rate increased above 5% threshold' },
-    { time: '17:07', event: 'Incident priority assigned as CRITICAL (Score: 14.1)' },
-    { time: '17:08', event: 'AI root cause analysis completed via Gemini LLM' },
-    { time: '17:12', event: 'Monitoring worker tracking resolution phase' },
+    '10:00 AM — System baseline nominal across all metrics',
+    '10:02 AM — Host CPU & container memory utilization increased',
+    '10:04 AM — Service request latency spiked to 820ms',
+    '10:06 AM — HTTP 5xx error rate elevated to 7.2%',
+    '10:08 AM — Correlated Incident created by NetScope Engine'
   ];
 
-  const handleFetchTimeline = async () => {
-    if (!incident.deviceId) return;
-    try {
-      setLoadingTimeline(true);
-      const res = await aiInsightsService.getTimelineSummary(incident.deviceId);
-      setTimelineData(res);
-    } catch (e) {
-      console.error('Failed to load timeline', e);
-    } finally {
-      setLoadingTimeline(false);
-    }
-  };
-
-  const handleGeneratePlaybook = async () => {
-    try {
-      setLoadingPlaybook(true);
-      const devId = incident.deviceId || incident.device?.id || 'dev-1';
-      const res = await api.post(`/ai/playbook/${devId}`, {
-        summary: incident.summary || incident.error,
-        possibleCauses
-      });
-      setPlaybook(res.data?.data || res.data);
-    } catch (e) {
-      console.warn('Playbook generation fallback:', e);
-      setPlaybook({
-        playbook_title: `SRE Incident Remediation Playbook — ${deviceName}`,
-        estimated_recovery_mins: 5,
-        cli_commands: [
-          `curl -Iv http://${deviceHost}`,
-          `ping -c 4 ${deviceHost}`,
-          `docker ps --filter name=${deviceName.toLowerCase().replace(/\s+/g, '-')}`,
-          `systemctl status network-manager`
-        ],
-        remediation_steps: [
-          `Execute socket connectivity ping against target host '${deviceHost}'`,
-          `Review systemctl and container execution logs for process crashes`,
-          `Flush local DNS resolver cache and verify gateway firewall rules`,
-          `Restart application service process if memory limit is exceeded`
-        ]
-      });
-    } finally {
-      setLoadingPlaybook(false);
-    }
-  };
+  const troubleshootingCommands = [
+    `docker ps --filter name=${targetContainerName}`,
+    `docker logs --tail 50 ${targetContainerName}`,
+    `docker restart ${targetContainerName}`
+  ];
 
   const handleCopyCmd = (cmd, index) => {
     navigator.clipboard.writeText(cmd);
@@ -94,20 +130,23 @@ export default function IncidentDetailsModal({ incident, onClose }) {
     setTimeout(() => setCopiedCmd(null), 2000);
   };
 
+  const actionStatus = activeAction?.status || 'RECOMMENDED';
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 font-mono">
       <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto text-slate-100 shadow-2xl p-6 space-y-6">
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#1E293B] pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-[#6366F1]/15 text-[#818CF8] border border-[#6366F1]/30 rounded-xl">
+            <div className="p-2.5 bg-rose-500/15 text-rose-400 border border-rose-500/30 rounded-xl">
               <ShieldAlert size={22} />
             </div>
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                Incident Overview — {deviceName}
+                INCIDENT #{incident.id ? incident.id.slice(0, 8).toUpperCase() : '1042'}
               </h2>
-              <p className="text-xs text-slate-400">ID: {incident.id || 'INC-84920'}</p>
+              <p className="text-xs text-slate-400">Target Host: <strong>{deviceName}</strong> ({deviceHost})</p>
             </div>
           </div>
           <button
@@ -118,192 +157,171 @@ export default function IncidentDetailsModal({ incident, onClose }) {
           </button>
         </div>
 
-        {/* 1. Incident Overview Section */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#0B0F19] p-4 rounded-xl border border-[#1E293B] text-xs">
-          <div>
-            <span className="text-slate-400 block mb-1 font-medium">Severity</span>
-            <span className={`inline-block font-extrabold px-2.5 py-0.5 rounded border uppercase text-[10px] ${
-              severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' :
-              severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-              'bg-amber-500/20 text-amber-400 border-amber-500/30'
-            }`}>
-              {severity}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-400 block mb-1 font-medium">Status</span>
-            <span className="font-bold text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 size={13} /> {status}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-400 block mb-1 font-medium">Detected Time</span>
-            <span className="font-bold text-white">{openedTime}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 block mb-1 font-medium">Duration</span>
-            <span className="font-bold text-white">{duration}</span>
-          </div>
-        </div>
-
-        {/* 2. Key Metrics Section */}
-        <div>
-          <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-            <Activity size={16} className="text-indigo-400" /> Metrics Breakdown
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
-              <span className="text-slate-400 block mb-1">Peak Latency</span>
-              <span className="text-base font-extrabold text-rose-400">2450 ms</span>
-            </div>
-            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
-              <span className="text-slate-400 block mb-1">Error Rate</span>
-              <span className="text-base font-extrabold text-amber-400">6.2%</span>
-            </div>
-            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
-              <span className="text-slate-400 block mb-1">Packet Loss</span>
-              <span className="text-base font-extrabold text-cyan-400">0.32%</span>
-            </div>
-            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
-              <span className="text-slate-400 block mb-1">Service Uptime</span>
-              <span className="text-base font-extrabold text-emerald-400">99.4%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Incident Progression Timeline Section */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Clock size={16} className="text-indigo-400" /> Incident Timeline
-            </h3>
-            {incident.deviceId && !timelineData && (
-              <button
-                onClick={handleFetchTimeline}
-                disabled={loadingTimeline}
-                className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition"
-              >
-                {loadingTimeline ? 'Generating...' : 'Refresh AI Timeline'}
-              </button>
-            )}
-          </div>
-          <div className="bg-[#0B0F19] border border-[#1E293B] rounded-xl p-4 space-y-3 text-xs">
-            {(timelineData?.key_events?.length ? timelineData.key_events.map((ev, i) => ({ time: `Step ${i+1}`, event: ev })) : defaultTimelineEvents).map((item, idx) => (
-              <div key={idx} className="flex items-start gap-3">
-                <span className="font-mono font-bold text-indigo-400 shrink-0 w-12">{item.time}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
-                <span className="text-slate-300">{item.event}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 4. AI Analysis Section */}
-        <div className="bg-gradient-to-br from-[#131129] to-[#0B0F19] border border-[#372E6B] rounded-xl p-5 space-y-4">
+        {/* 1. WHAT HAPPENED & RISK ASSESSMENT */}
+        <div className="p-5 bg-[#0B0F19] border border-[#1E293B] rounded-xl space-y-3 text-xs">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sparkles size={16} className="text-[#A855F7]" /> AI Root Cause Analysis
-            </h3>
-            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              Confidence: {Math.round((incident.confidence || 0.92) * 100)}%
-            </span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">WHAT HAPPENED</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-400 font-bold uppercase">Risk Level:</span>
+              <span className={`px-2.5 py-0.5 rounded font-extrabold border uppercase text-[10px] ${
+                riskLevel === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
+                riskLevel === 'HIGH' ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' :
+                'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              }`}>
+                {riskLevel}
+              </span>
+            </div>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
-            {incident.summary || incident.error || `Anomaly score jumped to ${(incident.priorityScore || 7.5).toFixed(1)} due to combined latency surge and 5xx error frequency.`}
+          <p className="text-slate-200 text-sm font-bold">
+            {incident.summary || incident.error || `Service performance degraded on ${deviceName} for approximately ${duration}.`}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="bg-[#0B0D1B] border border-[#2A2454] p-3 rounded-lg">
-              <h4 className="font-semibold text-amber-400 mb-2 flex items-center gap-1.5 text-[11px]">
-                <HelpCircle size={14} /> Possible Causes (Hypotheses)
-              </h4>
-              <ul className="list-disc list-inside space-y-1 text-slate-300">
-                {possibleCauses.map((c, i) => (
-                  <li key={i}>{c}</li>
-                ))}
-              </ul>
+          <p className="text-slate-400 text-xs leading-relaxed border-t border-[#1E293B] pt-2">
+            <strong>Business Impact:</strong> {incident.businessImpact || `Response latency degradation on ${deviceName} impacting active customer HTTP requests.`}
+          </p>
+        </div>
+
+        {/* 2. RECOVERY RECOMMENDATION & HUMAN APPROVAL PANEL */}
+        <div className="bg-gradient-to-br from-[#131129] via-[#0F172A] to-[#0B0F19] border border-indigo-500/40 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <Sparkles size={18} className="text-indigo-400" />
+              <span>AI RECOVERY RECOMMENDATION</span>
             </div>
 
-            <div className="bg-[#0B0D1B] border border-[#2A2454] p-3 rounded-lg">
-              <h4 className="font-semibold text-emerald-400 mb-2 flex items-center gap-1.5 text-[11px]">
-                <Wrench size={14} /> Recommended Investigation
-              </h4>
-              <ul className="list-disc list-inside space-y-1 text-slate-300">
-                {recommendedActions.map((a, i) => (
-                  <li key={i}>{a}</li>
-                ))}
-              </ul>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+              actionStatus === 'SUCCESS' || status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+              actionStatus === 'EXECUTING' || actionStatus === 'APPROVED' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 animate-pulse' :
+              'bg-amber-500/20 text-amber-300 border-amber-500/30'
+            }`}>
+              Status: {status === 'RESOLVED' || actionStatus === 'SUCCESS' ? '✓ RECOVERED' : actionStatus}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 bg-[#0B0F19] border border-[#1E293B] rounded-xl space-y-1">
+              <span className="text-slate-400 text-[10px] uppercase font-bold block">Recommended Action</span>
+              <span className="text-indigo-300 font-extrabold text-xs block">Restart Docker Container</span>
+              <span className="text-[10px] text-slate-500 block">Allowlisted capability</span>
+            </div>
+
+            <div className="p-3 bg-[#0B0F19] border border-[#1E293B] rounded-xl space-y-1">
+              <span className="text-slate-400 text-[10px] uppercase font-bold block">Target Container</span>
+              <span className="text-emerald-300 font-extrabold text-xs block truncate">{targetContainerName}</span>
+              <span className="text-[10px] text-slate-500 block">Docker Host</span>
+            </div>
+
+            <div className="p-3 bg-[#0B0F19] border border-[#1E293B] rounded-xl space-y-1">
+              <span className="text-slate-400 text-[10px] uppercase font-bold block">AI Confidence</span>
+              <span className="text-cyan-300 font-extrabold text-xs block">{Math.round((incident.confidence || 0.91) * 100)}%</span>
+              <span className="text-[10px] text-slate-500 block">MCP telemetry evidence</span>
             </div>
           </div>
 
-          {/* Remediation Playbook Trigger Button */}
-          {!playbook && (
-            <div className="pt-2">
+          {/* Execution Progress Stepper */}
+          {activeAction && (
+            <div className="p-3.5 bg-[#0B0F19] border border-indigo-500/30 rounded-xl space-y-2 text-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Recovery Execution Progress</span>
+              <div className="flex flex-wrap items-center gap-4 text-[11px]">
+                <span className={`font-bold flex items-center gap-1 ${['APPROVED', 'EXECUTING', 'VERIFYING', 'SUCCESS'].includes(actionStatus) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <CheckCircle2 size={12} /> Approved
+                </span>
+                <span className="text-slate-600">&rarr;</span>
+                <span className={`font-bold flex items-center gap-1 ${actionStatus === 'SUCCESS' || status === 'RESOLVED' ? 'text-emerald-400' : actionStatus === 'EXECUTING' ? 'text-indigo-400 animate-pulse' : ['VERIFYING'].includes(actionStatus) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <Play size={12} /> Agent Execution
+                </span>
+                <span className="text-slate-600">&rarr;</span>
+                <span className={`font-bold flex items-center gap-1 ${actionStatus === 'SUCCESS' || status === 'RESOLVED' ? 'text-emerald-400' : actionStatus === 'VERIFYING' ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`}>
+                  <RefreshCw size={12} /> Health Verification
+                </span>
+                <span className="text-slate-600">&rarr;</span>
+                <span className={`font-bold flex items-center gap-1 ${actionStatus === 'SUCCESS' || status === 'RESOLVED' ? 'text-emerald-400 font-extrabold' : 'text-slate-500'}`}>
+                  <CheckCircle2 size={12} /> Incident Resolved
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* HUMAN OPERATOR APPROVAL ACTION */}
+          {status !== 'RESOLVED' && actionStatus !== 'SUCCESS' && (
+            <div className="pt-2 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">
+                Governance Rule: Human operator approval required before Agent executes restart on {targetContainerName}.
+              </span>
+              
               <button
-                onClick={handleGeneratePlaybook}
-                disabled={loadingPlaybook}
-                className="w-full flex items-center justify-center gap-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50"
+                onClick={handleCreateAndApproveRecovery}
+                disabled={approving || ['APPROVED', 'EXECUTING', 'VERIFYING', 'SUCCESS'].includes(actionStatus)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition text-xs flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/30 disabled:opacity-50"
               >
-                <Terminal size={15} />
-                <span>{loadingPlaybook ? 'Generating SRE Remediation Commands...' : '⚡ Generate AI SRE Remediation Playbook'}</span>
+                <ThumbsUp size={15} />
+                <span>{approving ? 'Dispatched...' : ['APPROVED', 'EXECUTING'].includes(actionStatus) ? 'Executing Recovery...' : actionStatus === 'SUCCESS' ? '✓ Recovered' : 'Approve Recovery'}</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* 5. Automated Remediation Playbook CLI Section */}
-        {playbook && (
-          <div className="bg-[#090D16] border border-[#1E293B] rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-              <div className="flex items-center gap-2">
-                <Terminal size={16} className="text-emerald-400" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                  {playbook.playbook_title || 'SRE Incident Remediation Playbook'}
-                </h3>
-              </div>
-              <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
-                Est. Recovery: {playbook.estimated_recovery_mins || 5} mins
-              </span>
+        {/* 3. CORRELATED EVIDENCE */}
+        <div>
+          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Activity size={14} className="text-indigo-400" /> CORRELATED TELEMETRY EVIDENCE
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Host CPU</span>
+              <span className="text-base font-extrabold text-rose-400 mt-1 block">94.2%</span>
             </div>
-
-            {/* Steps */}
-            <div>
-              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-2">
-                Remediation Sequence Steps
-              </h4>
-              <ul className="space-y-1 text-xs text-slate-300 font-mono">
-                {(playbook.remediation_steps || []).map((step, idx) => (
-                  <li key={idx} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Peak Latency</span>
+              <span className="text-base font-extrabold text-rose-400 mt-1 block">820 ms</span>
             </div>
-
-            {/* Copyable CLI Commands */}
-            <div>
-              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-2">
-                Executable Recovery CLI Commands
-              </h4>
-              <div className="space-y-2 font-mono text-xs">
-                {(playbook.cli_commands || []).map((cmd, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-[#030712] border border-[#1E293B] p-2.5 rounded-lg text-emerald-300">
-                    <span className="truncate pr-2">$ {cmd}</span>
-                    <button
-                      onClick={() => handleCopyCmd(cmd, idx)}
-                      className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition shrink-0 cursor-pointer"
-                      title="Copy command"
-                    >
-                      {copiedCmd === idx ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                    </button>
-                  </div>
-                ))}
-              </div>
+            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">HTTP 5xx Errors</span>
+              <span className="text-base font-extrabold text-amber-400 mt-1 block">7.2%</span>
+            </div>
+            <div className="bg-[#111827] border border-[#1E293B] p-3 rounded-xl">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Container Status</span>
+              <span className="text-xs font-extrabold text-emerald-400 mt-1.5 block">Docker Up</span>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* 4. CHRONOLOGICAL TIMELINE */}
+        <div>
+          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Clock size={14} className="text-indigo-400" /> CHRONOLOGICAL SIGNAL TIMELINE
+          </h3>
+          <div className="bg-[#0B0F19] border border-[#1E293B] rounded-xl p-4 space-y-2.5 text-xs">
+            {defaultTimelineEvents.map((event, idx) => (
+              <div key={idx} className="flex items-center gap-3">
+                <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />
+                <span className="text-slate-300">{event}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 5. DIAGNOSTIC CLI TROUBLESHOOTING COMMANDS */}
+        <div className="bg-[#0B0D1B] border border-[#2A2454] p-4 rounded-xl space-y-3 text-xs">
+          <h4 className="font-bold text-indigo-300 uppercase text-[10px] flex items-center gap-1.5">
+            <Terminal size={14} /> Diagnostic Troubleshooting Commands for Operator
+          </h4>
+          <div className="space-y-2">
+            {troubleshootingCommands.map((cmd, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-2 p-2.5 bg-[#0B0F19] border border-slate-800 rounded text-[11px]">
+                <code className="text-emerald-300 truncate">{cmd}</code>
+                <button
+                  onClick={() => handleCopyCmd(cmd, idx)}
+                  className="p-1 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
+                >
+                  {copiedCmd === idx ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );

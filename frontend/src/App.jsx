@@ -12,8 +12,9 @@ import DeviceDetails from './pages/DeviceDetails.jsx';
 import Settings from './pages/Settings.jsx';
 
 import DeviceOverview from './pages/device-tabs/DeviceOverview.jsx';
-import DeviceSSL from './pages/device-tabs/DeviceSSL.jsx';
-import DevicePorts from './pages/device-tabs/DevicePorts.jsx';
+import DeviceHostHealth from './pages/device-tabs/DeviceHostHealth.jsx';
+import DevicePerformance from './pages/device-tabs/DevicePerformance.jsx';
+import DeviceSecurity from './pages/device-tabs/DeviceSecurity.jsx';
 import DeviceLogs from './pages/device-tabs/DeviceLogs.jsx';
 import DeviceAI from './pages/device-tabs/DeviceAI.jsx';
 
@@ -23,13 +24,11 @@ import AlertsPage from './pages/AlertsPage.jsx';
 import MonitoringPage from './pages/MonitoringPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import LogsPage from './pages/LogsPage.jsx';
-import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import Documentation from './pages/Documentation.jsx';
 
 import { ToastProvider } from './context/ToastContext.jsx';
 import { authService } from './services/auth.service.js';
 
-// Helper component for public routes (redirects logged-in users to /dashboard)
 function PublicOnlyRoute({ children }) {
   if (authService.isAuthenticated()) {
     return <Navigate to="/dashboard" replace />;
@@ -43,7 +42,7 @@ function App() {
       <ToastProvider>
         <Router>
           <Routes>
-            {/* Public Routes (Redirect to /dashboard if logged in) */}
+            {/* Public Routes */}
             <Route path="/" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
             <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
             <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
@@ -60,14 +59,15 @@ function App() {
               <Route path="/ai" element={<AIAssistantPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/logs" element={<LogsPage />} />
-              <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/docs" element={<Documentation />} />
               <Route path="/settings" element={<Settings />} />
               
               <Route path="/devices/:id" element={<DeviceDetails />}>
                 <Route index element={<DeviceOverview />} />
-                <Route path="ssl" element={<DeviceSSL />} />
-                <Route path="ports" element={<DevicePorts />} />
+                <Route path="host" element={<DeviceHostHealth />} />
+                <Route path="performance" element={<DevicePerformance />} />
+                <Route path="ai" element={<DeviceAI />} />
+                <Route path="security" element={<DeviceSecurity />} />
                 <Route path="logs" element={<DeviceLogs />} />
               </Route>
             </Route>

@@ -12,8 +12,10 @@ router.post('/explain/report/:reportId', requireAuth, aiController.explainReport
 
 router.get('/anomalies', requireAuth, aiController.getAnomalies);
 router.get('/incidents', requireAuth, aiController.getIncidents);
+router.post('/incidents/:id/resolve', requireAuth, aiController.resolveIncident);
 router.post('/incidents/:deviceId/analyze', requireAuth, aiController.triggerIncidentAnalysis);
 router.get('/timeline/:deviceId', requireAuth, aiController.getTimelineSummary);
 router.post('/playbook/:deviceId', requireAuth, aiController.generatePlaybook);
+router.post('/chat', requireAuth, aiController.chat);
 
 export default router;

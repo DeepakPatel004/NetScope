@@ -14,6 +14,8 @@ export const requireAuth = (req, res, next) => {
   }
 };
 
+export const authenticate = requireAuth;
+
 export const requireRole = (role) => (req, res, next) => {
   if (!req.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
   if (req.user.role !== role) return res.status(403).json({ success: false, message: 'Forbidden' });

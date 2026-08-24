@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
@@ -17,6 +15,8 @@ enum DeviceType {
   WEBSITE
   API
   IP
+  SERVER
+  WORKER
 }
 
 enum HealthStatus {
@@ -35,6 +35,8 @@ enum ActivityAction {
 enum ActivityEntity {
   DEVICE
   USER
+  AGENT
+  RECOVERY
 }
 
 enum Role {
@@ -53,9 +55,12 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  devices       Device[]
-  activityLogs  ActivityLog[]
-  refreshTokens RefreshToken[]
+  devices                 Device[]
+  activityLogs            ActivityLog[]
+  refreshTokens           RefreshToken[]
+  notificationPreference NotificationPreference?
+  notifications           Notification[]
+  auditLogs               AuditLog[]
 }
 
 model Device {
@@ -71,17 +76,32 @@ model Device {
   interval  Int        @default(1)
   enabled   Boolean    @default(true)
 
+  // NetScope Agent Authentication & Host Status
+  agentKey      String?   @unique
+  agentStatus   String    @default("NOT_CONNECTED") // "NOT_CONNECTED", "ONLINE", "OFFLINE"
+  lastSeen      DateTime?
+  metricsSource String    @default("EXTERNAL_HTTP") // "EXTERNAL_HTTP", "NETSCOPE_AGENT"
+
+  // Environment & Container Discovery
+  dockerStatus          String?   @default("NOT_INSTALLED") // "NOT_INSTALLED", "AVAILABLE", "RUNNING"
+  containers            Json?     // Array of discovered containers [{ id, name, image, status, ports, created }]
+  dockerComposeProjects Json?     // Array of discovered Docker Compose projects
+  capabilities          Json?     // Discovered capabilities ["restart_container", "restart_compose_service"]
+
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  healthLogs HealthLog[]
-  sslLogs   SSLStatus[]
-  portScanLogs PortScanLog[]
-  incidents Incident[]
-  anomalies Anomaly[]
+  healthLogs      HealthLog[]
+  sslLogs         SSLStatus[]
+  portScanLogs    PortScanLog[]
+  incidents       Incident[]
+  anomalies       Anomaly[]
+  agentMetrics    AgentMetric[]
+  recoveryActions RecoveryAction[]
 
   @@index([userId])
   @@index([host])
+  @@index([agentKey])
 }
 
 model HealthLog {
@@ -109,17 +129,41 @@ model HealthLog {
   @@index([deviceId, checkedAt])
 }
 
+model AgentMetric {
+  id            String   @id @default(uuid())
+
+  deviceId      String
+  device        Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  cpuPercent    Float?
+  ramPercent    Float?
+  ramUsedMb     Float?
+  ramTotalMb    Float?
+  diskPercent   Float?
+  diskUsedGb    Float?
+  diskTotalGb   Float?
+  loadAvg       Float?
+  netBytesSent  Float?
+  netBytesRecv  Float?
+
+  checkedAt     DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([checkedAt])
+  @@index([deviceId, checkedAt])
+}
+
 model ActivityLog {
   id         String   @id @default(uuid())
 
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  action ActivityAction
+  action     ActivityAction
 
-  entity ActivityEntity?
+  entity     ActivityEntity?
 
-  entityId    String?
+  entityId   String?
 
   createdAt  DateTime @default(now())
 
@@ -204,18 +248,25 @@ model Incident {
   deviceId           String
   device             Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
-  type               String      // "DOWNTIME", "ANOMALY", "LATENCY_SPIKE"
-  status             String      // "OPEN" or "RESOLVED"
+  type               String      // "DOWNTIME", "ANOMALY", "LATENCY_SPIKE", "HIGH_CPU", "HIGH_RAM", "SERVER_OFFLINE"
+  status             String      // "OPEN", "INVESTIGATING", "ACTION_REQUIRED", "RECOVERING", "RESOLVED", "FAILED"
   
   error              String?     // "Connection timeout"
+  currentValue       String?
+  expectedValue      String?
   
   priority           Severity    @default(MEDIUM)
   priorityScore      Float       @default(0.0)
   priorityReason     String?
   
+  riskLevel              String?  @default("MEDIUM") // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  businessImpact         String?  // Impact analysis statement
+  recoveryRecommendation String?  // AI Recommended action details
+
   summary            String?
   possibleCauses     Json?
   recommendedActions Json?
+  evidence           Json?
   confidence         Float?
   timeline           Json?
 
@@ -223,11 +274,103 @@ model Incident {
   anomaly            Anomaly?    @relation(fields: [anomalyId], references: [id], onDelete: SetNull)
 
   openedAt           DateTime    @default(now())
+  investigatedAt     DateTime?
   resolvedAt         DateTime?   
+
+  recoveryActions    RecoveryAction[]
 
   @@index([deviceId])
   @@index([status])
   @@index([priority])
+}
+
+model NotificationPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  notifyAnomaly     Boolean  @default(true)
+  notifyUnavailable Boolean  @default(true)
+  notifyCritical    Boolean  @default(true)
+  minSeverity       Severity @default(MEDIUM)
+  email             String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deviceId    String?
+  incidentId  String?
+
+  type        String   // "ANOMALY", "INCIDENT", "RECOVERY", "INVESTIGATION"
+  title       String
+  message     String
+  severity    Severity @default(MEDIUM)
+  isRead      Boolean  @default(false)
+
+  sentAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([sentAt])
+}
+
+model RecoveryAction {
+  id                 String    @id @default(uuid())
+
+  incidentId         String?
+  incident           Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  deviceId           String
+  device             Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  actionType         String    // "restart_container", "restart_compose_service"
+  targetName         String    // container ID, container name, or compose service name
+  provider           String    @default("DOCKER") // "DOCKER", "DOCKER_COMPOSE"
+  riskLevel          String    @default("MEDIUM") // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  status             String    // "RECOMMENDED", "PENDING_APPROVAL", "APPROVED", "EXECUTING", "VERIFYING", "SUCCESS", "FAILED"
+
+  reason             String?
+  cliCommand         String?
+  requiresApproval   Boolean   @default(true)
+
+  approvedById       String?
+  approvedAt         DateTime?
+  executedAt         DateTime?
+  completedAt        DateTime?
+  executionResult    String?
+  verificationResult String?
+  errorMessage       String?
+
+  createdAt          DateTime  @default(now())
+
+  @@index([incidentId])
+  @@index([deviceId])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action      String   // "AI_INVESTIGATION", "RECOVERY_APPROVED", "RECOVERY_EXECUTED", "RECOVERY_VERIFIED", "NOTIFICATION_SENT", "INCIDENT_RESOLVED"
+  entityType  String
+  entityId    String?
+  details     Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 model RefreshToken {

@@ -3,7 +3,8 @@ import redisConnection from '../config/redis.js';
 import { QUEUE_NAMES } from '../config/queue.js';
 import { monitorService } from '../modules/monitoring/monitor.service.js';
 import { healthService } from '../modules/health/health.service.js';
-import { incidentService } from '../modules/incident/incident.service.js';
+import { statisticalAnomalyService } from '../modules/anomaly/statisticalAnomaly.service.js';
+import { incidentEngine } from '../modules/incident/incident.engine.js';
 import { eventBus } from '../events/eventBus.js';
 import { aiClient } from '../utils/aiClient.js';
 import prisma from '../config/database.js';
@@ -38,76 +39,34 @@ export const startHealthWorker = () => {
         // 3. Save Health Log to Postgres
         await healthService.saveHealthLog(deviceId, checkResult);
 
-        // 4. Fetch device details & recent history for AI Anomaly Detection
+        // 4. Fetch device details, health history, and latest agent metrics
         const device = await prisma.device.findUnique({
           where: { id: deviceId },
-          select: { id: true, name: true, host: true },
+          select: { id: true, name: true, host: true, userId: true, agentStatus: true, metricsSource: true },
         });
 
         if (device) {
           const history = await healthService.getDeviceHealthHistory(deviceId, 30);
-          
-          // Re-order history to chronological order (oldest to newest) for model vectorization
           const chronHistory = [...history].reverse();
 
-          // 5. Call Python AI Microservice for Anomaly Detection
-          const anomalyRes = await aiClient.detectAnomaly(device, chronHistory);
+          const latestAgentMetric = await prisma.agentMetric.findFirst({
+            where: { deviceId },
+            orderBy: { checkedAt: 'desc' },
+          });
 
-          let anomalyRecord = null;
-          if (anomalyRes.is_anomaly || anomalyRes.anomaly_score > 0.40) {
-            anomalyRecord = await prisma.anomaly.create({
-              data: {
-                deviceId,
-                anomalyScore: anomalyRes.anomaly_score,
-                severity: anomalyRes.severity || 'MEDIUM',
-                detectionReason: anomalyRes.detection_reason,
-                metrics: anomalyRes.metrics_evaluated || {},
-              },
-            });
-            console.log(`🤖 [AI ANOMALY] ${host} | Score: ${anomalyRes.anomaly_score} | Severity: ${anomalyRes.severity}`);
+          // 5. Run Independent Statistical Anomaly Detection (Local Node.js Engine)
+          const statAnomaly = statisticalAnomalyService.detectStatisticalAnomaly(device, chronHistory, latestAgentMetric);
+
+          // 6. Call Python AI Microservice for AI Anomaly Vectorization (Fallback Safe)
+          let aiAnomaly = { is_anomaly: false, anomaly_score: 0.0, severity: 'LOW', detection_reason: '' };
+          try {
+            aiAnomaly = await aiClient.detectAnomaly(device, chronHistory);
+          } catch (err) {
+            console.warn(`[HealthWorker] AI Anomaly Detection fallback to statistical engine: ${err.message}`);
           }
 
-          // 6. Alert Prioritization & LLM Incident Analysis for severe issues or DOWN status
-          if (currentStatus === 'DOWN' || (anomalyRes.is_anomaly && ['HIGH', 'CRITICAL'].includes(anomalyRes.severity))) {
-            const downCount = chronHistory.filter((h) => h.status === 'DOWN').length;
-            const errorRate = chronHistory.length > 0 
-              ? chronHistory.filter((h) => h.status === 'DOWN' || (h.responseCode && h.responseCode >= 400)).length / chronHistory.length 
-              : 0.5;
-
-            const priorityRes = await aiClient.prioritizeAlert(
-              anomalyRes.severity,
-              chronHistory.length,
-              downCount,
-              errorRate,
-              downCount,
-              device.name,
-              anomalyRes.anomaly_score
-            );
-
-            const llmAnalysis = await aiClient.analyzeIncident(
-              device,
-              anomalyRes.anomaly_score,
-              priorityRes.priority,
-              anomalyRes.detection_reason,
-              chronHistory.slice(-10),
-              anomalyRes.metrics_evaluated
-            );
-
-            await incidentService.openIncident(
-              deviceId,
-              currentStatus === 'DOWN' ? 'DOWNTIME' : 'ANOMALY',
-              checkResult.message || anomalyRes.detection_reason,
-              {
-                ...llmAnalysis,
-                severity: priorityRes.priority,
-                priorityScore: priorityRes.priority_score,
-                priorityReason: priorityRes.priority_reason,
-                anomalyId: anomalyRecord?.id || null,
-              }
-            );
-          } else if (currentStatus === 'UP' && previousStatus === 'DOWN') {
-            await incidentService.resolveIncident(deviceId);
-          }
+          // 7. Process through Smart Incident Engine (Debounced, Deduplicated, Correlated State Machine)
+          await incidentEngine.processTelemetrySample(device, checkResult, statAnomaly, aiAnomaly, latestAgentMetric);
         }
 
         return checkResult;
@@ -126,5 +85,5 @@ export const startHealthWorker = () => {
     console.error(`[Worker] Job failed for device ${job?.data?.deviceId}:`, err.message);
   });
 
-  console.log('Health worker initialized with AI Anomaly Detector & Incident Analyzer.');
+  console.log('Health worker initialized with Smart Incident Engine & Statistical Anomaly Detector.');
 };

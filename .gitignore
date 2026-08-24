@@ -28,3 +28,7 @@ env/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Documentation & Presentations
+Docs/
+scratch/

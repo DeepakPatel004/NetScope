@@ -65,6 +65,15 @@ export const aiController = {
     }
   },
 
+  async resolveIncident(req, res, next) {
+    try {
+      const result = await aiService.resolveIncident(req.user?.id, req.params.id);
+      return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async triggerIncidentAnalysis(req, res, next) {
     try {
       const result = await aiService.triggerDeviceIncidentAnalysis(req.user?.id, req.params.deviceId);
@@ -86,6 +95,16 @@ export const aiController = {
   async generatePlaybook(req, res, next) {
     try {
       const result = await aiService.generatePlaybook(req.user?.id, req.params.deviceId, req.body || {});
+      return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async chat(req, res, next) {
+    try {
+      const { prompt, deviceId } = req.body || {};
+      const result = await aiService.chat(req.user?.id, prompt || '', deviceId || null);
       return res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);

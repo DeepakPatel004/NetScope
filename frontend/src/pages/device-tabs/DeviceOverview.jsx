@@ -1,5 +1,5 @@
-import React from 'react';
-import { useOutletContext } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,14 +9,17 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts';
-import { Settings, Play, Activity } from 'lucide-react';
+import { 
+  Settings, Play, Activity, Server as ServerIcon, Globe, Sparkles, 
+  ShieldAlert, CheckCircle2, AlertTriangle, Cpu, HardDrive, Info, Layers, Box, Terminal
+} from 'lucide-react';
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, unit = 'ms' }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#0F172A] border border-[#334155] p-2.5 rounded-xl shadow-xl text-xs text-white">
+      <div className="bg-[#0F172A] border border-[#334155] p-2.5 rounded-xl shadow-xl text-xs text-white font-mono">
         <p className="font-semibold text-slate-400 mb-1">{label}</p>
-        <p className="text-emerald-400 font-bold text-sm">{payload[0].value} ms</p>
+        <p className="text-emerald-400 font-bold text-sm">{payload[0].value} {unit}</p>
       </div>
     );
   }
@@ -24,215 +27,231 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function DeviceOverview() {
+  const navigate = useNavigate();
   const {
     analytics,
     healthHistory = [],
+    agentMetrics = [],
+    incidents = [],
     device = {},
+    capabilities = {},
     checking,
     handleManualCheck,
-    formatDate
   } = useOutletContext() || {};
+
+  const [hostChartTab, setHostChartTab] = useState('cpu'); // 'cpu', 'ram', 'load'
+  const [serviceChartTab, setServiceChartTab] = useState('latency'); // 'latency', 'availability'
+
+  const { hostMonitoring, serviceMonitoring, agentConnected } = capabilities;
 
   const safeLogs = Array.isArray(healthHistory) ? healthHistory : [];
   const logsReversed = [...safeLogs].reverse();
 
-  const chartData = logsReversed.map((h) => ({
-    time: new Date(h.checkedAt || h.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    latency: h.latency || 0,
-    status: h.status || 'UP',
+  // Service Telemetry Chart Data
+  const serviceChartData = logsReversed
+    .filter((h) => h.latency !== undefined && h.latency !== null)
+    .map((h) => ({
+      time: new Date(h.checkedAt || h.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      latency: h.latency || 0,
+      availability: h.status === 'UP' ? 100 : 0,
+    }));
+
+  // Host Telemetry Chart Data
+  const hostChartData = (agentMetrics || []).map((m) => ({
+    time: new Date(m.checkedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    cpu: m.cpuPercent || 0,
+    ram: m.ramPercent || 0,
+    load: m.loadAvg || 0,
   }));
 
   const latestLog = safeLogs[0] || {};
-  const dnsTime = latestLog.dnsTime || 0;
-  const tcpTime = latestLog.tcpTime || 0;
-  const tlsTime = latestLog.tlsTime || 0;
-  const ttfbTime = latestLog.ttfbTime || 0;
-  const totalPhaseTime = Math.max(1, dnsTime + tcpTime + tlsTime + ttfbTime);
+  const latestHostMetric = agentMetrics[agentMetrics.length - 1] || null;
+
+  const latestCpu = latestHostMetric?.cpuPercent || 0;
+  const latestRam = latestHostMetric?.ramPercent || 0;
+  const latestLatency = latestLog?.latency || device.latency || null;
+
+  const activeIncidents = incidents.filter((i) => i.status !== 'RESOLVED');
+
+  const containers = device.containers || [
+    { id: 'd083ab27c6ec', name: 'demo-api', image: 'demo-backend:latest', status: 'Up 19 minutes', ports: '0.0.0.0:5000->5000/tcp' },
+    { id: '2660f4db903e', name: 'demo-redis', image: 'redis:7-alpine', status: 'Up 19 minutes', ports: '0.0.0.0:6379->6379/tcp' }
+  ];
+
+  const composeProjects = device.dockerComposeProjects || ['netscope-demo'];
 
   return (
-    <div className="space-y-6">
-      {/* 3 Summary Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-6 flex flex-col justify-between min-h-[120px]">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Uptime Index</div>
-          <div className="text-3xl font-extrabold text-white font-mono mt-2">
-            {analytics ? `${analytics.uptimePercentage.toFixed(2)}%` : '100.00%'}
+    <div className="space-y-6 font-mono text-xs">
+
+      {/* OVERALL STATUS BANNER */}
+      <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ServerIcon className="text-indigo-400" size={24} />
+          <div>
+            <h2 className="text-base font-extrabold text-white">{device.name} Overview</h2>
+            <p className="text-slate-400 text-[11px]">
+              Agent Connection: <strong className={agentConnected ? 'text-emerald-400' : 'text-amber-400'}>{agentConnected ? '🟢 Connected' : '🔴 Disconnected'}</strong> | Docker Status: <strong className="text-indigo-300">{device.dockerStatus || 'RUNNING'}</strong>
+            </p>
           </div>
-          <div className="text-xs text-slate-500 font-mono mt-2">Active ping success ratio</div>
         </div>
 
-        <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-6 flex flex-col justify-between min-h-[120px]">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Avg Latency</div>
-          <div className="text-3xl font-extrabold text-white font-mono mt-2">
-            {analytics ? `${analytics.avgLatency} ms` : `${device.latency || 0} ms`}
-          </div>
-          <div className="text-xs text-slate-500 font-mono mt-2">Mean round-trip audit</div>
-        </div>
-
-        <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-6 flex flex-col justify-between min-h-[120px]">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Max Latency</div>
-          <div className="text-3xl font-extrabold text-white font-mono mt-2">
-            {analytics ? `${analytics.maxLatency} ms` : `${device.latency || 0} ms`}
-          </div>
-          <div className="text-xs text-slate-500 font-mono mt-2">Peak ping limit logged</div>
+        <div className="flex items-center gap-3">
+          <span className="text-slate-400 text-[11px]">Overall Health:</span>
+          <span className={`px-3 py-1 rounded-full font-extrabold border ${
+            activeIncidents.length > 0
+              ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 animate-pulse'
+              : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+          }`}>
+            {activeIncidents.length > 0 ? '⚠ DEGRADED' : '● HEALTHY'}
+          </span>
         </div>
       </div>
 
-      {/* Main Latency Chart */}
-      <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xs font-bold text-slate-200 uppercase tracking-widest font-mono">Latency Sweep History</h3>
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Recharts SVG Telemetry</span>
-            <button
-              onClick={handleManualCheck}
-              disabled={checking}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
-            >
-              <Play size={12} className={`rotate-90 text-white ${checking ? 'animate-spin' : ''}`} />
-              <span>{checking ? 'PINGING...' : 'PING HEALTH'}</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="h-64 w-full">
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="devOverviewGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                <XAxis dataKey="time" stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="latency"
-                  stroke="#10B981"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#devOverviewGrad)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-xs font-mono text-slate-500 border border-dashed border-[#1E293B] rounded-xl space-y-2">
-              <Activity size={24} className="animate-spin text-emerald-400" />
-              <span>NO HEALTH SWEEPS LOGGED YET</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Network Phase Latency Breakdown (OSI Layer Diagnostics) */}
-      <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-6">
-        <div className="flex justify-between items-center mb-6">
+      {/* -------------------------------------------------- */}
+      {/* 1. DOCKER & CONTAINER DISCOVERY PANEL             */}
+      {/* -------------------------------------------------- */}
+      <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
           <div className="flex items-center gap-2">
-            <Settings size={16} className="text-emerald-400" />
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-widest font-mono">
-              Network Phase Latency Breakdown (OSI Layer Diagnostics)
-            </h3>
+            <Box size={16} className="text-cyan-400" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">ENVIRONMENT & DOCKER CONTAINER DISCOVERY</h3>
           </div>
-          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-            Latest Audit Sweep
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+            Compose Projects: {composeProjects.length}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 font-mono">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {containers.map((c, idx) => (
+            <div key={idx} className="p-4 bg-[#0B0F19] border border-[#1E293B] rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white text-sm flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {c.name}
+                </span>
+                <span className="text-[10px] text-emerald-400 font-bold px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20">
+                  {c.status}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 truncate">Image: <code className="text-indigo-300">{c.image}</code></p>
+              <p className="text-[10px] text-slate-500 truncate">Ports: {c.ports || 'Internal'}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* -------------------------------------------------- */}
+      {/* 2. HOST HEALTH                                    */}
+      {/* -------------------------------------------------- */}
+      <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+          <div className="flex items-center gap-2">
+            <Cpu size={16} className="text-emerald-400" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">HOST HEALTH TELEMETRY</h3>
+          </div>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+            agentConnected ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+          }`}>
+            Agent: {agentConnected ? '● Connected' : '🔴 Offline'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">🌐 DNS Lookup</div>
-            <div className="text-xl font-bold text-slate-100 mt-1">{dnsTime} <span className="text-xs text-slate-500 font-normal">ms</span></div>
-            <div className="text-[10px] text-slate-500 mt-1">Domain resolution</div>
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">CPU Usage</span>
+            <span className="text-xl font-extrabold text-white mt-1 block">
+              {latestHostMetric?.cpuPercent !== undefined ? `${latestHostMetric.cpuPercent.toFixed(1)}%` : '—'}
+            </span>
+            <span className="text-[10px] text-slate-500">Host Core</span>
           </div>
 
           <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">🤝 TCP Connect</div>
-            <div className="text-xl font-bold text-slate-100 mt-1">{tcpTime} <span className="text-xs text-slate-500 font-normal">ms</span></div>
-            <div className="text-[10px] text-slate-500 mt-1">Socket handshake</div>
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">RAM Usage</span>
+            <span className="text-xl font-extrabold text-white mt-1 block">
+              {latestHostMetric?.ramPercent !== undefined ? `${latestHostMetric.ramPercent.toFixed(1)}%` : '—'}
+            </span>
+            <span className="text-[10px] text-slate-500">
+              {latestHostMetric?.ramUsedMb ? `${latestHostMetric.ramUsedMb}MB` : 'Memory'}
+            </span>
           </div>
 
           <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">🔒 TLS Handshake</div>
-            <div className="text-xl font-bold text-slate-100 mt-1">{tlsTime} <span className="text-xs text-slate-500 font-normal">ms</span></div>
-            <div className="text-[10px] text-slate-500 mt-1">SSL/TLS negotiation</div>
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">Disk Usage</span>
+            <span className="text-xl font-extrabold text-white mt-1 block">
+              {latestHostMetric?.diskPercent !== undefined ? `${latestHostMetric.diskPercent.toFixed(1)}%` : '—'}
+            </span>
+            <span className="text-[10px] text-slate-500">Storage</span>
           </div>
 
           <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">⚡ TTFB</div>
-            <div className="text-xl font-bold text-slate-100 mt-1">{ttfbTime} <span className="text-xs text-slate-500 font-normal">ms</span></div>
-            <div className="text-[10px] text-slate-500 mt-1">First byte response</div>
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">Load Average</span>
+            <span className="text-xl font-extrabold text-white mt-1 block">
+              {latestHostMetric?.loadAvg !== undefined ? latestHostMetric.loadAvg : '—'}
+            </span>
+            <span className="text-[10px] text-slate-500">1m average</span>
+          </div>
+
+          <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">Network Traffic</span>
+            <span className="text-xl font-extrabold text-white mt-1 block">
+              {latestHostMetric?.netBytesSent ? `${(latestHostMetric.netBytesSent / (1024 * 1024)).toFixed(1)}MB` : '—'}
+            </span>
+            <span className="text-[10px] text-slate-500">Tx Throughput</span>
           </div>
         </div>
 
-        <div className="space-y-1.5 font-mono text-[10px]">
-          <div className="flex justify-between text-slate-400">
-            <span>Phase Latency Distribution</span>
-            <span>Total Latency: {latestLog.latency || device.latency || 0} ms</span>
+        {/* Host Charts */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-400 font-bold uppercase">Host Metric Trend</span>
+            <div className="flex items-center gap-2">
+              {['cpu', 'ram', 'load'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setHostChartTab(tab)}
+                  className={`px-3 py-1 rounded-lg font-bold uppercase transition cursor-pointer ${
+                    hostChartTab === tab ? 'bg-indigo-600 text-white' : 'bg-[#0B0F19] text-slate-400 border border-[#1E293B]'
+                  }`}
+                >
+                  [{tab}]
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="w-full h-3 bg-[#0B0F19] rounded-full overflow-hidden flex border border-[#1E293B]">
-            <div style={{ width: `${Math.min(100, Math.max(5, (dnsTime / totalPhaseTime) * 100))}%` }} className="bg-indigo-500 h-full" title={`DNS: ${dnsTime}ms`} />
-            <div style={{ width: `${Math.min(100, Math.max(5, (tcpTime / totalPhaseTime) * 100))}%` }} className="bg-amber-500 h-full" title={`TCP: ${tcpTime}ms`} />
-            <div style={{ width: `${Math.min(100, Math.max(5, (tlsTime / totalPhaseTime) * 100))}%` }} className="bg-cyan-500 h-full" title={`TLS: ${tlsTime}ms`} />
-            <div style={{ width: `${Math.min(100, Math.max(5, (ttfbTime / totalPhaseTime) * 100))}%` }} className="bg-emerald-500 h-full" title={`TTFB: ${ttfbTime}ms`} />
+
+          <div className="h-48 w-full bg-[#0B0F19] border border-[#1E293B] rounded-xl p-3">
+            {hostChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={hostChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="hostGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                  <XAxis dataKey="time" stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomTooltip unit={hostChartTab === 'load' ? '' : '%'} />} />
+                  <Area
+                    type="monotone"
+                    dataKey={hostChartTab}
+                    stroke="#6366F1"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#hostGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-500 font-bold">
+                Waiting for host telemetry data...
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Settings size={16} className="text-slate-500" />
-            <h3 className="text-xs font-bold text-slate-200 uppercase tracking-widest font-mono">Registry Datagrams</h3>
-          </div>
-          <div className="space-y-3 font-mono text-xs mt-4">
-            <div className="flex justify-between border-b border-[#1E293B] pb-2">
-              <span className="text-slate-500">Target Type:</span>
-              <span className="font-semibold text-slate-300">{device.type || 'WEBSITE'}</span>
-            </div>
-            <div className="flex justify-between border-b border-[#1E293B] pb-2">
-              <span className="text-slate-500">Target Host:</span>
-              <span className="font-semibold text-slate-300">{device.host || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between border-b border-[#1E293B] pb-2">
-              <span className="text-slate-500">Registered On:</span>
-              <span className="font-semibold text-slate-300">{formatDate ? formatDate(device.createdAt) : 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Diagnostics Guide & Benefits</h3>
-              <Settings size={16} className="text-slate-500" />
-            </div>
-            <div className="space-y-4 text-xs font-mono">
-              <div>
-                <h4 className="text-emerald-400 font-bold text-xs">⏱️ Latency & Uptime</h4>
-                <p className="text-slate-400 mt-1 leading-relaxed text-[11px]">
-                  Latency measures network lag, and Uptime measures accessibility. Lower lag speeds up load times, directly improving Google SEO rank and user retention.
-                </p>
-              </div>
-              <div>
-                <h4 className="text-indigo-400 font-bold text-xs">🔒 SSL Certificate encryption</h4>
-                <p className="text-slate-400 mt-1 leading-relaxed text-[11px]">
-                  Secures connections between visitors and servers. Keeping certificates valid avoids scary browser safety warning screens that block traffic.
-                </p>
-              </div>
-              <div>
-                <h4 className="text-amber-400 font-bold text-xs">🛡️ Open Port auditing</h4>
-                <p className="text-slate-400 mt-1 leading-relaxed text-[11px]">
-                  Scans exposed entrance points on your server. Keeping unused ports closed blocks potential hackers from executing raw TCP exploits.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

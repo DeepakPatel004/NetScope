@@ -12,10 +12,14 @@ const SEVERITY_BADGES = {
 export default function RecentAlertsTable({ alerts = [], devices = [] }) {
   const navigate = useNavigate();
 
-  // Generate real alerts list from devices with DOWN status or incidents
-  const realAlerts = alerts.length > 0 
-    ? alerts 
-    : devices.filter(d => d.status === 'DOWN').map(d => ({
+  // Generate real alerts list from devices with DOWN status or valid alerts
+  const validAlerts = alerts.filter(a => a && (a.device || typeof a.service === 'string'));
+  
+  const realAlerts = devices.length === 0
+    ? []
+    : validAlerts.length > 0 
+    ? validAlerts 
+    : devices.filter(d => d && d.status === 'DOWN').map(d => ({
         id: `alert-down-${d.id}`,
         severity: 'CRITICAL',
         device: d.name || d.host,

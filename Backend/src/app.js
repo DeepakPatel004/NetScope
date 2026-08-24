@@ -9,8 +9,9 @@ import analyticsRoutes from './modules/analytics/analytics.routes.js';
 import reportRoutes from './modules/report/report.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import aiRoutes from './modules/ai/ai.routes.js';
-
-
+import agentRoutes from './modules/agent/agent.routes.js';
+import notificationRoutes from './modules/notification/notification.routes.js';
+import recoveryRoutes from './modules/recovery/recovery.routes.js';
 
 const app = express();
 
@@ -27,20 +28,17 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/v3/devices', deviceRoutes); 
-
 app.use('/api/v3/health', healthRoutes);
-
 app.use('/api/v3/dashboard', dashboardRoutes);
-
 app.use('/api/v3/ssl', sslRoutes);
-
 app.use('/api/v3/ports', portRoutes);
-
 app.use('/api/v3/reports', reportRoutes);
-
 app.use('/api/v3/analytics', analyticsRoutes);
 app.use('/api/v3/auth', authRoutes);
 app.use('/api/v3/ai', aiRoutes);
+app.use('/api/v3/agent', agentRoutes);
+app.use('/api/v3/notifications', notificationRoutes);
+app.use('/api/v3/recovery', recoveryRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

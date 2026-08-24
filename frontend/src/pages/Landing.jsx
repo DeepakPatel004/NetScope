@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Globe, Shield, BarChart3, Bell, Zap, ChevronRight, Server, Lock, TrendingUp } from 'lucide-react';
+import { Globe, Shield, Bot, Terminal, Play, ChevronRight } from 'lucide-react';
 import { authService } from '../services/auth.service.js';
 
 export default function Landing() {
@@ -8,43 +8,49 @@ export default function Landing() {
   const isAuth = authService.isAuthenticated();
 
   return (
-    <div className="bg-slate-950 text-slate-100 min-h-screen">
+    <div className="bg-[#030712] text-slate-100 min-h-screen font-sans relative overflow-hidden">
+
+      {/* Ambient Radial Background Glows */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-cyan-500/10 blur-[140px] pointer-events-none rounded-full" />
+      <div className="absolute top-1/3 right-1/4 w-[500px] h-[350px] bg-purple-500/10 blur-[140px] pointer-events-none rounded-full" />
+
       {/* Navigation Header */}
-      <nav className="border-b border-slate-800 sticky top-0 z-50 backdrop-blur-lg bg-slate-950/80">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Globe size={20} className="text-white" />
+      <nav className="border-b border-slate-800/80 sticky top-0 z-50 backdrop-blur-xl bg-[#030712]/80">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-cyan-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-cyan-500/20 font-mono">
+              N
             </div>
-            <span className="text-xl font-bold">NetScope</span>
+            <span className="text-xl font-extrabold tracking-tight font-mono text-white">NETSCOPE</span>
           </div>
-          <div className="flex gap-3">
+
+          <div className="flex items-center gap-3 font-mono text-xs">
             {isAuth ? (
               <>
                 <button
                   onClick={() => navigate('/dashboard')}
-                  className="px-4 py-2 text-sm font-medium text-slate-200 hover:text-white transition"
+                  className="px-4 py-2 font-bold text-slate-300 hover:text-white transition"
                 >
                   Dashboard
                 </button>
                 <button
                   onClick={() => navigate('/devices')}
-                  className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 rounded-lg transition"
+                  className="px-5 py-2 font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition shadow-lg shadow-indigo-600/25 cursor-pointer"
                 >
-                  Start Monitoring
+                  Console &rarr;
                 </button>
               </>
             ) : (
               <>
                 <button
                   onClick={() => navigate('/login')}
-                  className="px-4 py-2 text-sm font-medium text-slate-200 hover:text-white transition"
+                  className="px-4 py-2 font-bold text-slate-300 hover:text-white transition cursor-pointer"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => navigate('/register')}
-                  className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 rounded-lg transition"
+                  className="px-5 py-2 font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition shadow-lg shadow-indigo-600/25 cursor-pointer"
                 >
                   Get Started
                 </button>
@@ -55,154 +61,126 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-black mb-6 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Monitor Everything, Know Everything
+      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 relative z-10">
+        <div className="text-center space-y-6 max-w-4xl mx-auto">
+
+          {/* Tech Badges */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-[11px] font-mono text-slate-300 shadow-xl backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-cyan-400 font-bold">ISOLATION FOREST ML</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-purple-400 font-bold">LANGCHAIN SRE AGENT</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-amber-400 font-bold">MCP TOOLS</span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-tight text-white font-mono">
+            Autonomous Infrastructure Risk & <br className="hidden md:block" />
+            <span className="bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+              AI Incident Remediation
+            </span>
           </h1>
-          <p className="text-lg text-slate-400 mb-8 max-w-2xl mx-auto">
-            NetScope gives you complete visibility into your infrastructure. Monitor uptime, SSL certificates, port availability, and latency—all from one unified dashboard.
+
+          {/* Subtitle */}
+          <p className="text-sm md:text-base text-slate-400 max-w-2xl mx-auto font-sans leading-relaxed">
+            Real-time observability engine with automated scikit-learn anomaly scoring, LangChain diagnostic agents, and safe allowlisted recovery execution for Docker & Compose services.
           </p>
-          {!isAuth && (
-            <div className="flex gap-4 justify-center">
+
+          {/* CTA Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            {isAuth ? (
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold font-mono text-xs transition transform hover:scale-[1.02] shadow-xl shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
+              >
+                Open SRE Dashboard &rarr;
+              </button>
+            ) : (
               <button
                 onClick={() => navigate('/register')}
-                className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg font-semibold flex items-center gap-2 transition transform hover:scale-105"
+                className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold font-mono text-xs transition transform hover:scale-[1.02] shadow-xl shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
               >
-                Start Free Trial <ChevronRight size={18} />
+                Start Free Monitoring <ChevronRight size={16} />
               </button>
-              <button
-                onClick={() => navigate('/login')}
-                className="px-8 py-3 border border-slate-700 hover:border-slate-600 rounded-lg font-semibold transition"
-              >
-                Sign In
-              </button>
-            </div>
-          )}
+            )}
+
+            <a
+              href="/Docs/netscope-architecture-demo.html"
+              target="_blank"
+              rel="noreferrer"
+              className="px-6 py-3.5 bg-[#0F172A] hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 text-cyan-300 rounded-xl font-bold font-mono text-xs transition flex items-center gap-2 cursor-pointer shadow-lg"
+            >
+              <Play size={15} className="text-cyan-400 fill-cyan-400" />
+              <span>Interactive Architecture Demo</span>
+            </a>
+          </div>
         </div>
 
-        {/* Feature Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+        {/* Core Pillars Feature Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mt-20">
           {[
             {
-              icon: <Globe size={24} />,
-              title: 'Global Monitoring',
-              desc: 'Monitor endpoints worldwide with real-time latency tracking'
+              icon: <Globe className="text-cyan-400" size={22} />,
+              title: 'Real-Time Telemetry',
+              desc: 'Host CPU, RAM, Disk, and HTTP latency probes every 15 seconds.'
             },
             {
-              icon: <Shield size={24} />,
-              title: 'SSL Tracking',
-              desc: 'Get alerts before SSL certificates expire'
+              icon: <Bot className="text-purple-400" size={22} />,
+              title: 'Isolation Forest ML',
+              desc: 'Scikit-learn multi-metric anomaly scoring for early outage detection.'
             },
             {
-              icon: <Server size={24} />,
-              title: 'Port Scanning',
-              desc: 'Verify critical service ports remain accessible'
+              icon: <Terminal className="text-amber-400" size={22} />,
+              title: 'LangChain SRE Agent',
+              desc: 'Groq Llama-3.3 LLM executing 5 read-only MCP diagnostic tools.'
             },
             {
-              icon: <Bell size={24} />,
-              title: 'Smart Alerts',
-              desc: 'Instant notifications on outages and anomalies'
-            },
-            {
-              icon: <BarChart3 size={24} />,
-              title: 'Analytics',
-              desc: 'Deep dive into historical trends and patterns'
-            },
-            {
-              icon: <Lock size={24} />,
-              title: 'Role-Based Access',
-              desc: 'Secure multi-user environment with granular controls'
-            },
-            {
-              icon: <Zap size={24} />,
-              title: 'Instant Setup',
-              desc: 'Add devices in seconds, monitoring starts immediately'
-            },
-            {
-              icon: <TrendingUp size={24} />,
-              title: 'Reports & Export',
-              desc: 'Generate PDF/CSV reports for compliance and analysis'
+              icon: <Shield className="text-emerald-400" size={22} />,
+              title: 'Safe Auto-Remediation',
+              desc: 'Allowlisted docker restart execution upon human SRE approval.'
             },
           ].map((feature, i) => (
             <div
               key={i}
-              className="bg-slate-900/40 border border-slate-800 rounded-xl p-6 hover:border-indigo-500/50 transition group cursor-pointer"
+              className="bg-[#0F172A]/70 border border-[#1E293B] hover:border-cyan-500/40 rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 backdrop-blur-xl shadow-xl space-y-3 font-mono"
             >
-              <div className="text-indigo-400 mb-4 group-hover:scale-110 transition">
+              <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl w-fit">
                 {feature.icon}
               </div>
-              <h3 className="font-bold text-slate-200 mb-2">{feature.title}</h3>
-              <p className="text-sm text-slate-400">{feature.desc}</p>
+              <h3 className="font-bold text-white text-sm tracking-tight">{feature.title}</h3>
+              <p className="text-xs text-slate-400 font-sans leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>
 
-        {/* Stats Section */}
-        <div className="bg-gradient-to-r from-indigo-600/10 to-purple-600/10 border border-indigo-500/20 rounded-2xl p-12 mb-20">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
+        {/* Quantified System Metrics Banner */}
+        <div className="mt-16 bg-gradient-to-r from-indigo-950/40 via-purple-950/40 to-slate-950/40 border border-indigo-500/20 rounded-2xl p-8 backdrop-blur-xl font-mono">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
-              <div className="text-4xl font-black text-indigo-400 mb-2">99.9%</div>
-              <p className="text-slate-300">Uptime SLA</p>
+              <div className="text-2xl md:text-3xl font-black text-cyan-400">&lt; 1.8s</div>
+              <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold">Detection (MTTD)</p>
             </div>
             <div>
-              <div className="text-4xl font-black text-purple-400 mb-2">&lt;100ms</div>
-              <p className="text-slate-300">Check Latency</p>
+              <div className="text-2xl md:text-3xl font-black text-emerald-400">14.2s</div>
+              <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold">Recovery (MTTR)</p>
             </div>
             <div>
-              <div className="text-4xl font-black text-pink-400 mb-2">24/7</div>
-              <p className="text-slate-300">Background Monitoring</p>
+              <div className="text-2xl md:text-3xl font-black text-purple-400">91.4%</div>
+              <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold">AI Diagnostic Accuracy</p>
+            </div>
+            <div>
+              <div className="text-2xl md:text-3xl font-black text-amber-400">0 Writes</div>
+              <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold">Safe MCP Governance</p>
             </div>
           </div>
         </div>
 
-        {/* How It Works */}
-        <div className="mb-20">
-          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: '1', title: 'Register Account', desc: 'Create a free NetScope account in seconds' },
-              { step: '2', title: 'Add Devices', desc: 'Provide hostnames or IPs to monitor' },
-              { step: '3', title: 'Get Insights', desc: 'View real-time metrics and historical data' }
-            ].map((item, i) => (
-              <div key={i} className="relative">
-                <div className="flex items-start gap-6">
-                  <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-lg">
-                    {item.step}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-                    <p className="text-slate-400">{item.desc}</p>
-                  </div>
-                </div>
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-6 -right-12 text-indigo-600">→</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        {!isAuth && (
-          <div className="bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-12 text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to monitor your infrastructure?</h2>
-            <p className="text-slate-400 mb-8">Join thousands of teams using NetScope for reliable uptime monitoring.</p>
-            <button
-              onClick={() => navigate('/register')}
-              className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg font-semibold transition transform hover:scale-105"
-            >
-              Start Your Free Trial
-            </button>
-          </div>
-        )}
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 py-8 mt-20">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-slate-500">
-          <p>&copy; 2026 NetScope. All rights reserved.</p>
-        </div>
+      <footer className="border-t border-slate-800/80 py-8 relative z-10 font-mono text-xs text-slate-500 text-center">
+        <p>&copy; 2026 NetScope. AI-Powered Infrastructure Risk & Incident Remediation Platform.</p>
       </footer>
     </div>
   );
