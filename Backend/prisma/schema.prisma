@@ -14,9 +14,6 @@ datasource db {
 enum DeviceType {
   WEBSITE
   API
-  IP
-  SERVER
-  WORKER
 }
 
 enum HealthStatus {
@@ -35,8 +32,6 @@ enum ActivityAction {
 enum ActivityEntity {
   DEVICE
   USER
-  AGENT
-  RECOVERY
 }
 
 enum Role {
@@ -45,115 +40,73 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  email        String   @unique
+  id           String @id @default(uuid())
+  username     String @unique
+  email        String @unique
   passwordHash String
   fullName     String
-  role         Role     @default(USER)
+  role         Role   @default(USER)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  devices                 Device[]
-  activityLogs            ActivityLog[]
-  refreshTokens           RefreshToken[]
+  devices                Device[]
+  activityLogs           ActivityLog[]
+  refreshTokens          RefreshToken[]
   notificationPreference NotificationPreference?
-  notifications           Notification[]
-  auditLogs               AuditLog[]
+  notifications          Notification[]
+  auditLogs              AuditLog[]
 }
 
 model Device {
-  id        String     @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  name      String
-  host      String
-  type      DeviceType
+  name String
+  host String
+  type DeviceType
 
-  interval  Int        @default(1)
-  enabled   Boolean    @default(true)
+  interval Int     @default(30) // Seconds
+  enabled  Boolean @default(true)
 
-  // NetScope Agent Authentication & Host Status
-  agentKey      String?   @unique
-  agentStatus   String    @default("NOT_CONNECTED") // "NOT_CONNECTED", "ONLINE", "OFFLINE"
-  lastSeen      DateTime?
-  metricsSource String    @default("EXTERNAL_HTTP") // "EXTERNAL_HTTP", "NETSCOPE_AGENT"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Environment & Container Discovery
-  dockerStatus          String?   @default("NOT_INSTALLED") // "NOT_INSTALLED", "AVAILABLE", "RUNNING"
-  containers            Json?     // Array of discovered containers [{ id, name, image, status, ports, created }]
-  dockerComposeProjects Json?     // Array of discovered Docker Compose projects
-  capabilities          Json?     // Read-only capabilities ["host_metrics", "container_metrics"]
-
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  healthLogs      HealthLog[]
-  sslLogs         SSLStatus[]
-  portScanLogs    PortScanLog[]
-  incidents       Incident[]
-  anomalies       Anomaly[]
-  agentMetrics    AgentMetric[]
-  recoveryActions RecoveryAction[]
+  healthLogs HealthLog[]
+  incidents  Incident[]
 
   // Distributed Probes & Assignments
-  selectedProbes  Json?     // Array of probe IDs or regions e.g. ["probe-us-east", "probe-eu-west"]
-  timeoutMs       Int       @default(10000)
+  selectedProbes  Json? // Array of probe IDs or regions e.g. ["probe-us-east", "probe-eu-west"]
+  timeoutMs       Int               @default(10000)
   baselineLatency Float?
   assignments     CheckAssignment[]
   checkResults    CheckResult[]
 
   @@index([userId])
   @@index([host])
-  @@index([agentKey])
 }
 
 model HealthLog {
-  id            String        @id @default(uuid())
+  id String @id @default(uuid())
 
-  deviceId       String
-  device         Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
-  status         HealthStatus
+  status HealthStatus
 
-  latency        Int?
-  dnsTime        Int?          @default(0)
-  tcpTime        Int?          @default(0)
-  tlsTime        Int?          @default(0)
-  ttfbTime       Int?          @default(0)
+  latency  Int?
+  dnsTime  Int? @default(0)
+  tcpTime  Int? @default(0)
+  tlsTime  Int? @default(0)
+  ttfbTime Int? @default(0)
 
-  responseCode   Int?
+  responseCode Int?
 
-  message        String?
+  message String?
 
-  checkedAt      DateTime      @default(now())
-
-  @@index([deviceId])
-  @@index([checkedAt])
-  @@index([deviceId, checkedAt])
-}
-
-model AgentMetric {
-  id            String   @id @default(uuid())
-
-  deviceId      String
-  device        Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  cpuPercent    Float?
-  ramPercent    Float?
-  ramUsedMb     Float?
-  ramTotalMb    Float?
-  diskPercent   Float?
-  diskUsedGb    Float?
-  diskTotalGb   Float?
-  loadAvg       Float?
-  netBytesSent  Float?
-  netBytesRecv  Float?
-
-  checkedAt     DateTime @default(now())
+  checkedAt DateTime @default(now())
 
   @@index([deviceId])
   @@index([checkedAt])
@@ -161,62 +114,20 @@ model AgentMetric {
 }
 
 model ActivityLog {
-  id         String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  action     ActivityAction
+  action ActivityAction
 
-  entity     ActivityEntity?
+  entity ActivityEntity?
 
-  entityId   String?
+  entityId String?
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
-}
-
-enum CertificateStatus {
-  VALID
-  EXPIRING
-  EXPIRED
-  INVALID
-}
-
-model SSLStatus {
-  id            String            @id @default(uuid())
-
-  deviceId      String
-  device        Device            @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  issuer        String?
-  subject       String?
-  validFrom     DateTime?
-  validTo       DateTime?
-  daysRemaining Int?
-  serialNumber  String?
-  fingerprint   String?
-
-  status        CertificateStatus
-
-  checkedAt     DateTime          @default(now())
-
-  @@index([deviceId])
-  @@index([checkedAt])
-  @@index([deviceId, checkedAt])
-}
-
-model PortScanLog {
-  id          String   @id @default(uuid())
-  deviceId    String
-  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  openPorts   Int[]
-  checkedAt   DateTime @default(now())
-
-  @@index([deviceId])
-  @@index([checkedAt])
-  @@index([deviceId, checkedAt])
 }
 
 enum Severity {
@@ -226,74 +137,35 @@ enum Severity {
   CRITICAL
 }
 
-model Anomaly {
-  id              String      @id @default(uuid())
-
-  deviceId        String
-  device          Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  timestamp       DateTime    @default(now())
-  anomalyScore    Float
-  severity        Severity
-  detectionReason String
-  metrics         Json
-
-  isResolved      Boolean     @default(false)
-  resolvedAt      DateTime?
-
-  incidents       Incident[]
-
-  @@index([deviceId])
-  @@index([timestamp])
-  @@index([deviceId, timestamp])
-  @@index([severity])
-}
-
 model Incident {
-  id                 String      @id @default(uuid())
+  id String @id @default(uuid())
 
-  deviceId           String
-  device             Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
-  type               String      // "DOWNTIME", "ANOMALY", "LATENCY_SPIKE", "HIGH_CPU", "HIGH_RAM", "SERVER_OFFLINE"
-  status             String      // "OPEN", "INVESTIGATING", "ACTION_REQUIRED", "RECOVERING", "RESOLVED", "FAILED"
-  
-  error              String?     // "Connection timeout"
-  currentValue       String?
-  expectedValue      String?
-  
-  priority           Severity    @default(MEDIUM)
-  priorityScore      Float       @default(0.0)
-  priorityReason     String?
-  
-  riskLevel              String?  @default("MEDIUM") // "LOW", "MEDIUM", "HIGH", "CRITICAL"
-  businessImpact         String?  // Impact analysis statement
-  recoveryRecommendation String?  // AI Recommended action details
+  type   String // "DOWNTIME", "LATENCY_SPIKE"
+  status String // "OPEN", "INVESTIGATING", "ACTION_REQUIRED", "RECOVERING", "RESOLVED", "FAILED"
 
-  summary            String?
-  possibleCauses     Json?
-  recommendedActions Json?
-  evidence           Json?
-  confidence         Float?
-  timeline           Json?
+  error String? // "Connection timeout"
+
+  priority       Severity @default(MEDIUM)
+  priorityScore  Float    @default(0.0)
+  priorityReason String?
+
+  summary  String?
+  timeline Json?
 
   // Multi-Probe Verification & Diagnostic Evidence
-  assessment         String?     // "WIDESPREAD_FAILURE", "LOCATION_SPECIFIC_FAILURE", "PROBE_CONNECTIVITY_SUSPECTED", "DNS_FAILURE", "TLS_CERTIFICATE_FAILURE", "LATENCY_DEGRADATION", "INSUFFICIENT_EVIDENCE"
-  failedStage        String?     // "DNS_RESOLUTION", "TCP_CONNECTION", "TLS_VERIFICATION", "HTTP_STATUS", "TIMEOUT", "UNKNOWN"
-  affectedLocations  Json?       // Array of region strings e.g. ["us-east-1"]
-  supportingEvidence Json?       // Structured probe verdicts & control results
-  uncertainties      Json?       // Documented unknowns / uncertainties
+  assessment         String? // "WIDESPREAD_FAILURE", "LOCATION_SPECIFIC_FAILURE", "PROBE_CONNECTIVITY_SUSPECTED", "DNS_FAILURE", "TLS_CERTIFICATE_FAILURE", "LATENCY_DEGRADATION", "INSUFFICIENT_EVIDENCE"
+  failedStage        String? // "DNS_RESOLUTION", "TCP_CONNECTION", "TLS_VERIFICATION", "HTTP_STATUS", "TIMEOUT", "UNKNOWN"
+  affectedLocations  Json? // Array of region strings e.g. ["us-east-1"]
+  supportingEvidence Json? // Structured probe verdicts & control results
+  uncertainties      Json? // Documented unknowns / uncertainties
   acknowledgedAt     DateTime?
   acknowledgedBy     String?
 
-  anomalyId          String?
-  anomaly            Anomaly?    @relation(fields: [anomalyId], references: [id], onDelete: SetNull)
-
-  openedAt           DateTime    @default(now())
-  investigatedAt     DateTime?
-  resolvedAt         DateTime?   
-
-  recoveryActions    RecoveryAction[]
+  openedAt   DateTime  @default(now())
+  resolvedAt DateTime?
 
   @@index([deviceId])
   @@index([status])
@@ -301,9 +173,9 @@ model Incident {
 }
 
 model NotificationPreference {
-  id                String   @id @default(uuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   notifyAnomaly     Boolean  @default(true)
   notifyUnavailable Boolean  @default(true)
@@ -312,78 +184,44 @@ model NotificationPreference {
   minSeverity       Severity @default(MEDIUM)
   email             String?
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  deviceId    String?
-  incidentId  String?
+  deviceId   String?
+  incidentId String?
 
-  type        String   // "ANOMALY", "INCIDENT", "RECOVERY", "INVESTIGATION"
-  title       String
-  message     String
-  severity    Severity @default(MEDIUM)
-  isRead      Boolean  @default(false)
+  type     String // "ANOMALY", "INCIDENT", "RECOVERY", "INVESTIGATION"
+  title    String
+  message  String
+  severity Severity @default(MEDIUM)
+  isRead   Boolean  @default(false)
 
-  sentAt      DateTime @default(now())
+  sentAt DateTime @default(now())
 
   @@index([userId])
   @@index([isRead])
   @@index([sentAt])
 }
 
-model RecoveryAction {
-  id                 String    @id @default(uuid())
-
-  incidentId         String?
-  incident           Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-
-  deviceId           String
-  device             Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  actionType         String    // "restart_container", "restart_compose_service"
-  targetName         String    // container ID, container name, or compose service name
-  provider           String    @default("DOCKER") // "DOCKER", "DOCKER_COMPOSE"
-  riskLevel          String    @default("MEDIUM") // "LOW", "MEDIUM", "HIGH", "CRITICAL"
-  status             String    // "RECOMMENDED", "PENDING_APPROVAL", "APPROVED", "EXECUTING", "VERIFYING", "SUCCESS", "FAILED"
-
-  reason             String?
-  cliCommand         String?
-  requiresApproval   Boolean   @default(true)
-
-  approvedById       String?
-  approvedAt         DateTime?
-  executedAt         DateTime?
-  completedAt        DateTime?
-  executionResult    String?
-  verificationResult String?
-  errorMessage       String?
-
-  createdAt          DateTime  @default(now())
-
-  @@index([incidentId])
-  @@index([deviceId])
-  @@index([status])
-}
-
 model AuditLog {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  action      String   // "AI_INVESTIGATION", "RECOVERY_APPROVED", "RECOVERY_EXECUTED", "RECOVERY_VERIFIED", "NOTIFICATION_SENT", "INCIDENT_RESOLVED"
-  entityType  String
-  entityId    String?
-  details     Json?
+  action     String // Authentication and operational audit events
+  entityType String
+  entityId   String?
+  details    Json?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([action])
@@ -391,33 +229,33 @@ model AuditLog {
 }
 
 model RefreshToken {
-  id           String   @id @default(uuid())
-  token        String   @unique
+  id    String @id @default(uuid())
+  token String @unique
 
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
-  revoked      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
 
   @@index([userId])
 }
 
 model Probe {
-  id              String            @id @default(uuid())
+  id              String    @id @default(uuid())
   name            String
-  region          String            // e.g. "us-east-1", "eu-central-1", "lab-probe-a"
-  tokenHash       String            @unique
-  status          String            @default("ONLINE") // "ONLINE", "OFFLINE", "REVOKED"
-  isRevoked       Boolean           @default(false)
-  version         String?           @default("1.0.0")
+  region          String // e.g. "us-east-1", "eu-central-1", "lab-probe-a"
+  tokenHash       String    @unique
+  status          String    @default("ONLINE") // "ONLINE", "OFFLINE", "REVOKED"
+  isRevoked       Boolean   @default(false)
+  version         String?   @default("1.0.0")
   lastHeartbeatAt DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  assignments     CheckAssignment[]
-  checkResults    CheckResult[]
+  assignments  CheckAssignment[]
+  checkResults CheckResult[]
 
   @@index([region])
   @@index([status])
@@ -434,21 +272,21 @@ model ControlEndpoint {
 }
 
 model CheckAssignment {
-  id             String       @id @default(uuid())
+  id             String    @id @default(uuid())
   monitorId      String
-  device         Device       @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  device         Device    @relation(fields: [monitorId], references: [id], onDelete: Cascade)
   probeId        String
-  probe          Probe        @relation(fields: [probeId], references: [id], onDelete: Cascade)
-  kind           String       @default("ROUTINE") // "ROUTINE", "DIAGNOSTIC_CONFIRMATION", "CONTROL_CHECK"
+  probe          Probe     @relation(fields: [probeId], references: [id], onDelete: Cascade)
+  kind           String    @default("ROUTINE") // "ROUTINE", "DIAGNOSTIC_CONFIRMATION", "CONTROL_CHECK"
   targetUrl      String
-  status         String       @default("PENDING") // "PENDING", "LEASED", "COMPLETED", "EXPIRED"
+  status         String    @default("PENDING") // "PENDING", "LEASED", "COMPLETED", "EXPIRED"
   leasedAt       DateTime?
   leaseExpiresAt DateTime?
-  attemptCount   Int          @default(0)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  attemptCount   Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  result         CheckResult?
+  result CheckResult?
 
   @@index([probeId, status])
   @@index([status, leaseExpiresAt])
@@ -457,23 +295,24 @@ model CheckAssignment {
 
 model CheckResult {
   id           String           @id @default(uuid())
+  kind         String           @default("ROUTINE") // Snapshot of assignment kind; separates control from target evidence
   assignmentId String?          @unique
   assignment   CheckAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
   monitorId    String
   device       Device           @relation(fields: [monitorId], references: [id], onDelete: Cascade)
   probeId      String
   probe        Probe            @relation(fields: [probeId], references: [id], onDelete: Cascade)
-  status       HealthStatus     // UP, DOWN
-  latency      Int?             // Total latency ms
+  status       HealthStatus // UP, DOWN
+  latency      Int? // Total latency ms
   dnsTime      Int?             @default(0)
   tcpTime      Int?             @default(0)
   tlsTime      Int?             @default(0)
   ttfbTime     Int?             @default(0)
   responseCode Int?
-  failureStage String?          // "DNS_RESOLUTION", "TCP_CONNECTION", "TLS_VERIFICATION", "HTTP_STATUS", "TIMEOUT", "SSRF_BLOCKED"
+  failureStage String? // "DNS_RESOLUTION", "TCP_CONNECTION", "TLS_VERIFICATION", "HTTP_STATUS", "TIMEOUT", "SSRF_BLOCKED"
   message      String?
   resolvedIp   String?
-  tlsCert      Json?            // { issuer, subject, validTo, daysRemaining, authorized }
+  tlsCert      Json? // { issuer, subject, validTo, daysRemaining, authorized }
   isLate       Boolean          @default(false)
   observedAt   DateTime         @default(now())
   receivedAt   DateTime         @default(now())

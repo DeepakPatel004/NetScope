@@ -65,6 +65,7 @@ export async function runAssignmentSchedulerTick() {
       where: {
         status: 'ONLINE',
         isRevoked: false,
+        lastHeartbeatAt: { gte: new Date(Date.now() - 60000) },
       },
     });
 
@@ -75,7 +76,7 @@ export async function runAssignmentSchedulerTick() {
 
     // 3. Fetch Enabled Monitors
     const devices = await prisma.device.findMany({
-      where: { enabled: true },
+      where: { enabled: true, type: { in: ['WEBSITE', 'API'] } },
     });
 
     for (const device of devices) {
@@ -87,9 +88,6 @@ export async function runAssignmentSchedulerTick() {
         targetProbes = activeProbes.filter(p =>
           device.selectedProbes.includes(p.id) || device.selectedProbes.includes(p.region)
         );
-        if (targetProbes.length === 0) {
-          targetProbes = activeProbes; // Fallback to fleet if none matched
-        }
       }
 
       for (const probe of targetProbes) {

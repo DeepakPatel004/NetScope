@@ -50,7 +50,7 @@ export const dashboardService = {
   },
 
   /**
-   * Returns current status of all devices mapped with agentStatus, latest log, and cpuPercent
+   * Returns current status of all devices mapped with their latest target observation
    */
   async getDevicesStatus(userId) {
     const devices = await prisma.device.findMany({
@@ -98,7 +98,7 @@ export const dashboardService = {
     });
 
     const recentProbeResults = await prisma.checkResult.findMany({
-      where: { monitorId: deviceId },
+      where: { monitorId: deviceId, kind: { not: 'CONTROL_CHECK' }, isLate: false },
       orderBy: { observedAt: 'desc' },
       take: 50,
       include: {

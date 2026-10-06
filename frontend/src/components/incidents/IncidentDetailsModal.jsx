@@ -25,7 +25,7 @@ export default function IncidentDetailsModal({ incident, onClose }) {
   if (!incident) return null;
 
   const assessment = incident.assessment || 'INSUFFICIENT_EVIDENCE';
-  const evidence = incident.supportingEvidence || incident.evidence || {};
+  const evidence = incident.supportingEvidence || {};
   const uncertainties = Array.isArray(incident.uncertainties) ? incident.uncertainties : [];
   const probeVerdicts = Array.isArray(evidence.probeVerdicts) ? evidence.probeVerdicts : [];
   const controlVerdict = evidence.controlEndpointVerdict || null;

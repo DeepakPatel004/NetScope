@@ -99,7 +99,7 @@ export default function IncidentsPage() {
                 const summaryText = typeof item.summary === 'string'
                   ? item.summary
                   : (item.error || 'Infrastructure Metric Degradation');
-                const risk = item.priority || item.riskLevel || 'MEDIUM';
+                const risk = item.priority || 'MEDIUM';
 
                 return (
                   <div

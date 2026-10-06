@@ -121,6 +121,8 @@ scripts/       Local evaluation harness
 deploy/        Deployment guide, Compose and draft Terraform templates
 ```
 
+See the [database workflow and migration notes](Backend/prisma/README.md) for the active models and legacy-data cleanup.
+
 ## Deployment and current limits
 
 The intended topology is one central host and probes on two independently hosted machines or regions. The [deployment guide](deploy/DEPLOYMENT_GUIDE.md) explains the boundaries and unfinished provisioning work.

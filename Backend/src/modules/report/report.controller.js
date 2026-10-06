@@ -22,10 +22,9 @@ const buildCsv = (reportData) => {
   lines.push(`SSL Expiring,${summary.sslSummary.EXPIRING || 0}`);
   lines.push(`SSL Expired,${summary.sslSummary.EXPIRED || 0}`);
   lines.push(`SSL Invalid,${summary.sslSummary.INVALID || 0}`);
-  lines.push(`Total Open Ports Seen,${summary.portSummary.totalOpenPortsSeen}`);
   lines.push('');
 
-  lines.push('Device ID,Name,Host,Type,Enabled,Availability,Uptime %,Average Latency (ms),Last Checked,SSL Status,SSL Days Remaining,Open Ports');
+  lines.push('Device ID,Name,Host,Type,Enabled,Availability,Uptime %,Average Latency (ms),Last Checked,SSL Status,SSL Days Remaining');
   devices.forEach((device) => {
     lines.push([
       device.deviceId,
@@ -39,7 +38,6 @@ const buildCsv = (reportData) => {
       formatDate(device.lastChecked),
       device.sslStatus,
       device.sslDaysRemaining ?? 'N/A',
-      `"${device.openPorts.join(', ')}"`,
     ].join(','));
   });
 
@@ -71,7 +69,6 @@ const generatePdf = (reportData, res) => {
   doc.text(`SSL expiring: ${summary.sslSummary.EXPIRING || 0}`);
   doc.text(`SSL expired: ${summary.sslSummary.EXPIRED || 0}`);
   doc.text(`SSL invalid: ${summary.sslSummary.INVALID || 0}`);
-  doc.text(`Total open ports seen: ${summary.portSummary.totalOpenPortsSeen}`);
   doc.moveDown();
 
   doc.fontSize(12).text('Devices', { underline: true });
@@ -84,7 +81,6 @@ const generatePdf = (reportData, res) => {
     doc.text(`Enabled: ${device.enabled ? 'Yes' : 'No'} | Availability: ${device.availability} | Uptime: ${device.uptimePercentage}%`);
     doc.text(`Avg latency: ${device.averageLatency} ms | Last checked: ${formatDate(device.lastChecked)}`);
     doc.text(`SSL: ${device.sslStatus} | Days remaining: ${device.sslDaysRemaining ?? 'N/A'}`);
-    doc.text(`Open ports: ${device.openPorts.join(', ') || 'None'}`);
     doc.moveDown(0.5);
   });
 

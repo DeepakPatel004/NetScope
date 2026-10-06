@@ -75,6 +75,7 @@ export const multiProbeVerifier = {
     const recentResults = await prisma.checkResult.findMany({
       where: {
         monitorId: deviceId,
+        kind: { not: 'CONTROL_CHECK' },
         observedAt: { gte: sinceTime },
         isLate: false,
       },
@@ -325,6 +326,7 @@ export const multiProbeVerifier = {
     const recentResults = await prisma.checkResult.findMany({
       where: {
         monitorId: device.id,
+        kind: { not: 'CONTROL_CHECK' },
         observedAt: { gte: sinceTime },
         isLate: false,
       },

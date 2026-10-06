@@ -1,22 +1,23 @@
 import { z } from 'zod';
 
-const createDeviceSchema = z.object({
+const fields = z.object({
   name: z.string().trim().min(1, 'Name is required'),
-  host: z.string().trim().min(1, 'Host is required'),
-  type: z.enum(['WEBSITE', 'API', 'IP', 'SERVER', 'WORKER'], {
-    errorMap: () => ({ message: 'Type must be WEBSITE, API, IP, SERVER, or WORKER' }),
-  }),
-  interval: z.coerce
-    .number()
-    .int()
-    .positive('Interval must be greater than 0')
-    .default(30),
+  host: z.string().trim().url().refine(value => {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password;
+  }, 'Use an HTTP/HTTPS URL without embedded credentials'),
+  type: z.enum(['WEBSITE', 'API']),
+  interval: z.coerce.number().int().min(5).max(86400),
+  timeoutMs: z.coerce.number().int().min(1000).max(30000),
+  selectedProbes: z.array(z.string().trim().min(1)).max(100),
   enabled: z.boolean().optional(),
 });
 
-const updateDeviceSchema = createDeviceSchema.partial();
-
 export const deviceValidator = {
-  create: createDeviceSchema,
-  update: updateDeviceSchema,
+  create: fields.extend({
+    interval: fields.shape.interval.default(30),
+    timeoutMs: fields.shape.timeoutMs.default(10000),
+    selectedProbes: fields.shape.selectedProbes.default([]),
+  }),
+  update: fields.partial(),
 };

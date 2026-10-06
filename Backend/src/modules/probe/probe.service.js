@@ -112,6 +112,7 @@ export const probeService = {
     const checkResult = await prisma.checkResult.create({
       data: {
         assignmentId,
+        kind: assignment.kind,
         monitorId: assignment.monitorId,
         probeId: probe.id,
         status: data.status === 'UP' ? 'UP' : 'DOWN',
@@ -138,7 +139,7 @@ export const probeService = {
     });
 
     // 7. Save backwards-compatible HealthLog for dashboard metrics & charts
-    if (assignment.device && assignment.kind !== 'CONTROL_CHECK') {
+    if (!isLate && assignment.device && assignment.kind !== 'CONTROL_CHECK') {
       await prisma.healthLog.create({
         data: {
           deviceId: assignment.monitorId,
