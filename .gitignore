@@ -32,3 +32,13 @@ Thumbs.db
 # Documentation & Presentations
 Docs/
 scratch/
+
+# Terraform local state and secrets
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+
+# Local database backups (contain private data)
+.local-backups/

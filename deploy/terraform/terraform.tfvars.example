@@ -1,0 +1,12 @@
+# Example Terraform Variable Configuration for NetScope Cloud Deployment
+
+aws_region_central   = "us-east-1"
+aws_region_probe_a   = "us-west-2"
+aws_region_probe_b   = "eu-central-1"
+
+instance_type        = "t3.small"
+ssh_public_key_path  = "~/.ssh/id_rsa.pub"
+
+# Generate tokens via Coordinator API: POST /api/v3/admin/enroll
+probe_token_a        = "nsp_probe_cloud_us_west_2_token"
+probe_token_b        = "nsp_probe_cloud_eu_central_1_token"

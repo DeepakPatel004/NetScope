@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../../config/database.js';
 
 export const dashboardService = {
   /**
@@ -13,10 +12,6 @@ export const dashboardService = {
           orderBy: { checkedAt: 'desc' },
           take: 1,
         },
-        agentMetrics: {
-          orderBy: { checkedAt: 'desc' },
-          take: 1,
-        },
       },
     });
 
@@ -25,12 +20,10 @@ export const dashboardService = {
     let offlineCount = 0;
     let totalLatency = 0;
     let logsWithLatencyCount = 0;
-    let connectedAgents = 0;
-    let totalAgents = 0;
 
     devices.forEach((device) => {
       const latestLog = device.healthLogs[0];
-      const isOnline = latestLog ? latestLog.status === 'UP' : (device.status === 'UP' || device.agentStatus === 'ONLINE');
+      const isOnline = latestLog?.status === 'UP';
       
       if (isOnline) {
         onlineCount++;
@@ -43,12 +36,6 @@ export const dashboardService = {
         logsWithLatencyCount++;
       }
 
-      if (device.type === 'SERVER' || device.agentKey) {
-        totalAgents++;
-        if (device.agentStatus === 'ONLINE') {
-          connectedAgents++;
-        }
-      }
     });
 
     const averageLatency = logsWithLatencyCount > 0 ? Math.round(totalLatency / logsWithLatencyCount) : 0;
@@ -58,14 +45,12 @@ export const dashboardService = {
       online: onlineCount,
       offline: offlineCount,
       averageLatency,
-      connectedAgents,
-      totalAgents,
       lastUpdated: new Date().toISOString(),
     };
   },
 
   /**
-   * Returns current status of all devices mapped with agentStatus, latest log, and cpuPercent
+   * Returns current status of all devices mapped with their latest target observation
    */
   async getDevicesStatus(userId) {
     const devices = await prisma.device.findMany({
@@ -75,30 +60,19 @@ export const dashboardService = {
           orderBy: { checkedAt: 'desc' },
           take: 1,
         },
-        agentMetrics: {
-          orderBy: { checkedAt: 'desc' },
-          take: 1,
-        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
     return devices.map((device) => {
       const latestLog = device.healthLogs[0];
-      const latestAgentMetric = device.agentMetrics[0];
 
       return {
         id: device.id,
         name: device.name,
         host: device.host,
         type: device.type,
-        agentKey: device.agentKey,
-        agentStatus: device.agentStatus || 'NOT_CONNECTED',
-        lastSeen: device.lastSeen,
-        cpuPercent: latestAgentMetric?.cpuPercent ?? null,
-        ramPercent: latestAgentMetric?.ramPercent ?? null,
-        diskPercent: latestAgentMetric?.diskPercent ?? null,
-        status: latestLog ? latestLog.status : (device.agentStatus === 'ONLINE' ? 'UP' : 'UNKNOWN'),
+        status: latestLog ? latestLog.status : 'UNKNOWN',
         latency: latestLog ? latestLog.latency : null,
         lastChecked: latestLog ? latestLog.checkedAt : device.updatedAt,
         interval: device.interval,
@@ -110,12 +84,9 @@ export const dashboardService = {
   /**
    * Returns details for a specific device with recent logs
    */
-  async getDeviceDetails(deviceId) {
-    const device = await prisma.device.findUnique({
-      where: { id: deviceId },
-      include: {
-        recoveryPolicy: true,
-      },
+  async getDeviceDetails(userId, deviceId) {
+    const device = await prisma.device.findFirst({
+      where: { id: deviceId, userId },
     });
 
     if (!device) return null;
@@ -124,6 +95,17 @@ export const dashboardService = {
       where: { deviceId },
       orderBy: { checkedAt: 'desc' },
       take: 50,
+    });
+
+    const recentProbeResults = await prisma.checkResult.findMany({
+      where: { monitorId: deviceId, kind: { not: 'CONTROL_CHECK' }, isLate: false },
+      orderBy: { observedAt: 'desc' },
+      take: 50,
+      include: {
+        probe: {
+          select: { id: true, name: true, region: true },
+        },
+      },
     });
 
     const totalLogs = recentLogs.length;
@@ -137,22 +119,65 @@ export const dashboardService = {
 
     const lastSuccessfulLog = recentLogs.find(log => log.status === 'UP');
 
+    // Group latest check by probe location
+    const latestByProbe = {};
+    for (const r of recentProbeResults) {
+      if (!latestByProbe[r.probeId]) {
+        latestByProbe[r.probeId] = {
+          probeId: r.probeId,
+          probeName: r.probe?.name,
+          region: r.probe?.region,
+          status: r.status,
+          latency: r.latency,
+          dnsTime: r.dnsTime,
+          tcpTime: r.tcpTime,
+          tlsTime: r.tlsTime,
+          ttfbTime: r.ttfbTime,
+          failureStage: r.failureStage,
+          message: r.message,
+          tlsCert: r.tlsCert,
+          resolvedIp: r.resolvedIp,
+          observedAt: r.observedAt,
+        };
+      }
+    }
+
     return {
       deviceInfo: {
         id: device.id,
         name: device.name,
         host: device.host,
         type: device.type,
-        agentKey: device.agentKey,
-        agentStatus: device.agentStatus,
         interval: device.interval,
+        selectedProbes: device.selectedProbes,
+        timeoutMs: device.timeoutMs,
+        baselineLatency: device.baselineLatency,
         createdAt: device.createdAt,
       },
       analytics: {
         uptimePercentage,
         averageLatency: avgLatency,
-        lastSeen: lastSuccessfulLog ? lastSuccessfulLog.checkedAt : device.lastSeen,
+        lastSeen: lastSuccessfulLog ? lastSuccessfulLog.checkedAt : null,
       },
+      probeMatrix: Object.values(latestByProbe),
+      locationResults: recentProbeResults.map(r => ({
+        id: r.id,
+        probeId: r.probeId,
+        probeName: r.probe?.name,
+        region: r.probe?.region,
+        status: r.status,
+        latency: r.latency,
+        dnsTime: r.dnsTime || 0,
+        tcpTime: r.tcpTime || 0,
+        tlsTime: r.tlsTime || 0,
+        ttfbTime: r.ttfbTime || 0,
+        responseCode: r.responseCode,
+        failureStage: r.failureStage,
+        message: r.message,
+        resolvedIp: r.resolvedIp,
+        tlsCert: r.tlsCert,
+        observedAt: r.observedAt,
+      })),
       timeline: recentLogs.map(log => ({
         id: log.id,
         status: log.status,

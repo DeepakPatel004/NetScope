@@ -3,19 +3,18 @@ import prisma from "../../config/database.js";
 export const deviceService = {
   // Create a new Device
   async createDevice(userId, deviceData) {
-    const { name, host, type, interval = 30, enabled = true, agentKey, agentStatus, metricsSource } = deviceData;
+    const { name, host, type, interval = 30, enabled = true, timeoutMs = 10000, selectedProbes = [] } = deviceData;
 
     return await prisma.device.create({
       data: {
         userId,
+        timeoutMs,
+        selectedProbes,
         name,
         host,
         type: type || 'WEBSITE',
         interval: Number(interval) || 30,
         enabled: enabled ?? true,
-        ...(agentKey ? { agentKey } : {}),
-        ...(agentStatus ? { agentStatus } : {}),
-        ...(metricsSource ? { metricsSource } : {}),
       }
     });
   },
@@ -43,17 +42,16 @@ export const deviceService = {
     const device = await this.getDeviceById(userId, id);
     if (!device) return null;
 
-    const { name, host, type, interval, enabled, agentKey, agentStatus, metricsSource } = data;
+    const { name, host, type, interval, enabled, timeoutMs, selectedProbes } = data;
 
     const updateData = {};
+    if (timeoutMs !== undefined) updateData.timeoutMs = timeoutMs;
+    if (selectedProbes !== undefined) updateData.selectedProbes = selectedProbes;
     if (name !== undefined) updateData.name = name;
     if (host !== undefined) updateData.host = host;
     if (type !== undefined) updateData.type = type;
     if (interval !== undefined) updateData.interval = Number(interval);
     if (enabled !== undefined) updateData.enabled = enabled;
-    if (agentKey !== undefined) updateData.agentKey = agentKey;
-    if (agentStatus !== undefined) updateData.agentStatus = agentStatus;
-    if (metricsSource !== undefined) updateData.metricsSource = metricsSource;
 
     return prisma.device.update({
       where: { id },

@@ -1,6 +1,6 @@
 import { healthService } from './health.service.js';
 import { deviceService } from '../device/device.service.js';
-import { healthQueue, QUEUE_NAMES } from '../../config/queue.js';
+import { queueManualCheck } from '../probe/assignmentScheduler.js';
 
 // NOTE: This controller expects authentication middleware to set `req.user.id`
 
@@ -47,17 +47,13 @@ export const healthController = {
         return res.status(404).json({ success: false, message: 'Device not found' });
       }
 
-      // Push a job to BullMQ manually, bypassing the 1-minute scheduler
-      await healthQueue.add(QUEUE_NAMES.HEALTH_CHECK, {
-        deviceId: device.id,
-        host: device.host,
-        type: device.type,
-      });
+      const count = await queueManualCheck(device);
+      if (!count) return res.status(409).json({ success: false, message: 'No selected probe has a recent heartbeat. Start a probe before requesting checks.' });
 
       // 202 Accepted means "I got the request and it is processing in the background"
       return res.status(202).json({ 
         success: true, 
-        message: 'Manual health check queued' 
+        message: `Queued ${count} distributed probe check(s)`
       });
     } catch (error) {
       next(error);

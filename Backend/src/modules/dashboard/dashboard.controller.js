@@ -28,7 +28,7 @@ export const dashboardController = {
   async getDeviceDetails(req, res, next) {
     try {
       const { id } = req.params;
-      const details = await dashboardService.getDeviceDetails(id);
+      const details = await dashboardService.getDeviceDetails(req.user.id, id);
       
       if (!details) {
         return res.status(404).json({ success: false, message: 'Device not found' });

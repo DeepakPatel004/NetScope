@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-const baseURL = 'http://localhost:5000/api/v3';
+const baseURL = import.meta.env.VITE_API_URL || '/api/v3';
+export const backendURL = baseURL.replace(/\/api\/v3\/?$/, '');
 
-export const api = axios.create({ baseURL });
+export const api = axios.create({ baseURL, timeout: 20000 });
 
 let isRefreshing = false;
 let failedQueue = [];

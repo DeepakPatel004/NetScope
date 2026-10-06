@@ -9,12 +9,9 @@ export const reportService = {
           orderBy: { checkedAt: 'desc' },
           take: 50,
         },
-        sslLogs: {
-          orderBy: { checkedAt: 'desc' },
-          take: 1,
-        },
-        portScanLogs: {
-          orderBy: { checkedAt: 'desc' },
+        checkResults: {
+          where: { kind: { not: 'CONTROL_CHECK' }, isLate: false },
+          orderBy: { observedAt: 'desc' },
           take: 1,
         },
       },
@@ -26,12 +23,15 @@ export const reportService = {
       const logsWithLatency = device.healthLogs.filter((log) => log.latency !== null && log.latency > 0);
       const uptimeLogs = device.healthLogs.length;
       const onlineLogs = device.healthLogs.filter((log) => log.status === 'UP').length;
-      const uptimePercentage = uptimeLogs > 0 ? Math.round((onlineLogs / uptimeLogs) * 100) : 100;
+      const uptimePercentage = uptimeLogs > 0 ? Math.round((onlineLogs / uptimeLogs) * 100) : null;
       const averageLatency = logsWithLatency.length > 0
         ? Math.round(logsWithLatency.reduce((sum, log) => sum + log.latency, 0) / logsWithLatency.length)
         : 0;
-      const latestSSL = device.sslLogs[0] || null;
-      const latestPortScan = device.portScanLogs[0] || null;
+      const latestResult = device.checkResults[0];
+      const cert = latestResult?.tlsCert;
+      const tlsStatus = !cert ? 'UNKNOWN' : cert.authorized === false ? 'INVALID'
+        : cert.daysRemaining < 0 ? 'EXPIRED' : cert.daysRemaining <= 30 ? 'EXPIRING'
+        : cert.authorized === true ? 'VALID' : 'UNKNOWN';
 
       return {
         deviceId: device.id,
@@ -46,12 +46,10 @@ export const reportService = {
         averageLatency,
         latestLatency: latestHealthLog ? latestHealthLog.latency : null,
         latestStatusMessage: latestHealthLog ? latestHealthLog.message : null,
-        sslStatus: latestSSL ? latestSSL.status : 'UNKNOWN',
-        sslDaysRemaining: latestSSL ? latestSSL.daysRemaining : null,
-        sslValidTo: latestSSL ? latestSSL.validTo : null,
-        sslCheckedAt: latestSSL ? latestSSL.checkedAt : null,
-        openPorts: latestPortScan ? latestPortScan.openPorts : [],
-        portScanCheckedAt: latestPortScan ? latestPortScan.checkedAt : null,
+        sslStatus: tlsStatus,
+        sslDaysRemaining: cert?.daysRemaining ?? null,
+        sslValidTo: cert?.validTo ?? null,
+        sslCheckedAt: cert ? latestResult.observedAt : null,
       };
     });
 
@@ -62,9 +60,10 @@ export const reportService = {
     const averageLatency = deviceReports.length > 0
       ? Math.round(deviceReports.reduce((sum, device) => sum + device.averageLatency, 0) / deviceReports.length)
       : 0;
-    const overallUptime = deviceReports.length > 0
-      ? Math.round(deviceReports.reduce((sum, device) => sum + device.uptimePercentage, 0) / deviceReports.length)
-      : 100;
+    const measuredDevices = deviceReports.filter(device => device.uptimePercentage !== null);
+    const overallUptime = measuredDevices.length > 0
+      ? Math.round(measuredDevices.reduce((sum, device) => sum + device.uptimePercentage, 0) / measuredDevices.length)
+      : null;
 
     const sslSummary = deviceReports.reduce((summary, device) => {
       const status = device.sslStatus || 'UNKNOWN';
@@ -74,18 +73,6 @@ export const reportService = {
       }
       return summary;
     }, {});
-
-    const portSummary = {
-      totalDevicesScanned: deviceReports.filter((device) => device.openPorts.length > 0).length,
-      totalOpenPortsSeen: deviceReports.reduce((sum, device) => sum + device.openPorts.length, 0),
-      openPortFrequency: {},
-    };
-
-    deviceReports.forEach((device) => {
-      device.openPorts.forEach((port) => {
-        portSummary.openPortFrequency[port] = (portSummary.openPortFrequency[port] || 0) + 1;
-      });
-    });
 
     const devicesByHealth = {
       online: onlineDevices,
@@ -100,7 +87,6 @@ export const reportService = {
         averageLatency,
         overallUptime,
         sslSummary,
-        portSummary,
         generatedAt: new Date().toISOString(),
       },
       devices: deviceReports,
