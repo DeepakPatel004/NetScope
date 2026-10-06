@@ -37,7 +37,7 @@ export const authService = {
     // persist refresh token
     await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id, expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) } });
 
-    return { accessToken, refreshToken, user: { id: user.id, email: user.email, username: user.username } };
+    return { accessToken, refreshToken, user: { id: user.id, email: user.email, username: user.username, fullName: user.fullName, role: user.role } };
   },
 
   async logout(refreshToken) {
