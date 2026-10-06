@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, Filter, CheckCircle2, ChevronRight, Activity } from 'lucide-react';
+import { ShieldAlert, Filter, CheckCircle2, ChevronRight } from 'lucide-react';
 import IncidentDetailsModal from '../components/incidents/IncidentDetailsModal.jsx';
 import api from '../services/api.js';
 
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState([]);
-  const [anomalies, setAnomalies] = useState([]);
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [filterSeverity, setFilterSeverity] = useState('ALL');
-  const [activeTab, setActiveTab] = useState('INCIDENTS'); // "INCIDENTS" or "ANOMALIES"
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -16,13 +14,9 @@ export default function IncidentsPage() {
     try {
       setLoading(true);
       setError('');
-      const [incRes, anomRes] = await Promise.all([
-        api.get('/ai/incidents'),
-        api.get('/ai/anomalies'),
-      ]);
+      const incRes = await api.get('/incidents');
       const incList = (incRes.data?.data || []).filter(i => i.device !== null);
       setIncidents(incList);
-      setAnomalies(anomRes.data?.data || []);
 
       // Auto-open incident modal if redirected from email link (?id=INCIDENT_ID)
       const urlParams = new URLSearchParams(window.location.search);
@@ -91,33 +85,10 @@ export default function IncidentsPage() {
         </div>
       </div>
 
-      {/* Sub-Navigation Tabs */}
-      <div className="flex gap-2 border-b border-[#2b3036] pb-3">
-        <button
-          onClick={() => setActiveTab('INCIDENTS')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'INCIDENTS' ? 'bg-teal-600 text-white shadow-sm ' : 'bg-[#181b1f] text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <ShieldAlert size={14} />
-          <span>Incident History ({filteredIncidents.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('ANOMALIES')}
-          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition cursor-pointer ${
-            activeTab === 'ANOMALIES' ? 'bg-teal-600 text-white shadow-sm ' : 'bg-[#181b1f] text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Activity size={14} />
-          <span>Telemetry Anomalies Logged ({anomalies.length})</span>
-        </button>
-      </div>
-
       {/* Tab 1: Active Operational Incidents */}
       {error && <div role="alert" className="text-rose-300">{error} <button onClick={loadData} className="underline">Retry</button></div>}
       {loading && <p>Loading incidents…</p>}
-      {!loading && !error && activeTab === 'INCIDENTS' && (
+      {!loading && !error && (
         <div>
           {filteredIncidents.length > 0 ? (
             <div className="space-y-4">
@@ -178,37 +149,6 @@ export default function IncidentsPage() {
                 </p>
               </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 2: Telemetry Anomalies Logged */}
-      {!loading && !error && activeTab === 'ANOMALIES' && (
-        <div className="space-y-3">
-          {anomalies.length === 0 ? (
-            <div className="py-12 bg-[#181b1f] border border-dashed border-[#2b3036] rounded-xl text-center text-slate-400">
-              No recent metric anomalies logged.
-            </div>
-          ) : (
-            anomalies.map((anom) => (
-              <div key={anom.id} className="p-4 bg-[#181b1f] border border-[#2b3036] rounded-xl flex items-center justify-between font-sans">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-amber-400 font-bold">📊 ANOMALY RECORDED</span>
-                    <span className="text-slate-400 font-bold">{anom.device?.name || 'Resource'}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
-                      Score: {typeof anom.anomalyScore === 'number' ? anom.anomalyScore.toFixed(2) : 'N/A'} ({anom.severity})
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">{anom.detectionReason}</p>
-                </div>
-
-                <div className="text-[10px] text-slate-500 text-right">
-                  Logged: {new Date(anom.timestamp).toLocaleTimeString()}
-                  <span className="block text-emerald-400">No Alert Noise Sent</span>
-                </div>
-              </div>
-            ))
           )}
         </div>
       )}

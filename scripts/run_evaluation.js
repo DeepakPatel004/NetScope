@@ -267,65 +267,21 @@ async function runBenchmark() {
   console.log(`  - Extra Verification Requests: ${metrics.policyB.extraVerificationRequests} (${(metrics.policyB.extraVerificationRequests / metrics.policyB.totalChecks).toFixed(2)} req/check overhead)`);
 
   // 4. Generate EVALUATION_REPORT.md
-  const reportContent = `# NetScope: Quantitative Evaluation & Benchmark Report
+  const reportContent = `# Local classifier comparison
 
-## 1. Executive Summary & Objective
-This report measures and compares the fault-detection fidelity, alert accuracy, and latency tradeoffs of two monitoring paradigms:
-- **Policy A (Single-Probe Alert Policy)**: A traditional monitoring model where an alert is immediately raised upon any observed failure from a single vantage point.
-- **Policy B (NetScope Independent Verification Policy)**: NetScope's distributed model, where an abnormal observation triggers bounded diagnostic follow-ups on independent regional probes and operator control endpoints before classifying the incident.
+This harness uses a local HTTP server, the backend check runner and simulated probe observations. It does not exercise independently deployed probe processes, the assignment polling protocol, database concurrency or cloud networking.
 
-## 2. Experimental Methodology & Environment
-- **Environment**: Controlled Local Fault Lab with HTTP/HTTPS instrumentation.
-- **Participating Probes**:
-  - Probe A: Configured label \`us-east-1\`
-  - Probe B: Configured label \`eu-central-1\`
-  - Operator Control Baseline: \`http://127.0.0.1:${PORT}/control\`
-- **Sample Size**: 50 total check cycles across 5 distinct real-world fault conditions (10 iterations each).
-- **Ground Truth Categories**:
-  1. *Baseline Healthy Traffic*: Target 200 OK.
-  2. *Widespread Target Outage*: Target 503 Service Unavailable.
-  3. *Probe Local Egress Fault*: Probe A experiences local socket failure while target and other probes remain healthy.
-  4. *Transient Application Flake*: Single-request 500 error followed by immediate recovery.
-  5. *Location-Specific Partition*: Target returns 403 to \`us-east-1\` while remaining healthy for \`eu-central-1\`.
+| Fixture metric | Immediate alert | Verification policy |
+| --- | ---: | ---: |
+| False outage alerts | ${metrics.policyA.falseOutageAlerts} | ${metrics.policyB.falseOutageAlerts} |
+| True outage alerts | ${metrics.policyA.trueOutageAlerts} | ${metrics.policyB.trueOutageAlerts} |
+| Missed incidents | ${metrics.policyA.missedIncidents} | ${metrics.policyB.missedIncidents} |
+| Mean harness duration (ms) | ${avgDelayA} | ${avgDelayB} |
+| Extra requests counted by harness | 0 | ${metrics.policyB.extraVerificationRequests} |
 
----
+These values describe this fixture run only. Harness duration excludes real distributed scheduling and cannot be presented as production confirmation latency. Request counts do not validate live coordinator budgets. No general false-positive reduction or cloud capacity claim follows from these scenarios.
 
-## 3. Measured Empirical Results
-
-| Metric | Policy A (Single-Probe) | Policy B (NetScope Multi-Probe) | Difference / Impact |
-| :--- | :---: | :---: | :--- |
-| **False Outage Alerts** | **${metrics.policyA.falseOutageAlerts}** | **${metrics.policyB.falseOutageAlerts}** | **100% reduction in false alarms** during probe network blips |
-| **True Outages Confirmed** | ${metrics.policyA.trueOutageAlerts} | ${metrics.policyB.trueOutageAlerts} | Parity on verified target failures |
-| **Missed Outages (False Negatives)**| ${metrics.policyA.missedIncidents} | ${metrics.policyB.missedIncidents} | 0 missed outages |
-| **Mean Detection Delay** | **${avgDelayA} ms** | **${avgDelayB} ms** | +${Math.max(0, avgDelayB - avgDelayA)} ms confirmation delay trade-off |
-| **Diagnostic Verification Requests**| 0 | ${metrics.policyB.extraVerificationRequests} | ${(metrics.policyB.extraVerificationRequests / metrics.policyB.totalChecks).toFixed(2)} extra requests per routine check |
-
----
-
-## 4. Engineering Trade-off Analysis & Findings
-
-### A. Elimination of False Outage Alerts
-Under **Scenario 3 (Probe Egress Fault)** and **Scenario 4 (Transient Flake)**, Policy A triggered **${metrics.policyA.falseOutageAlerts} false outage alerts**, erroneously blaming the customer's monitored endpoint.
-In contrast, NetScope's independent verification engine:
-1. Detected failure from Probe A.
-2. Verified that Probe B could reach the target without issue.
-3. Observed that Probe A *also* failed its operator control check.
-4. Correctly categorized the incident as **\`PROBE_CONNECTIVITY_SUSPECTED\`** rather than an endpoint outage, suppressing paging alerts to the customer.
-
-### B. Accurate Distinction of Location-Specific Partitions
-Under **Scenario 5**, Policy A either paged for a total outage (if probing from US-East) or remained silent (if probing from EU-West). NetScope correctly classified the condition as **\`LOCATION_SPECIFIC_FAILURE\`**, providing explicit evidence identifying the affected region (\`us-east-1\`) and healthy region (\`eu-central-1\`).
-
-### C. Unfavorable Tradeoffs (Published Transparently)
-1. **Confirmation Delay Overhead**: Policy B introduces a **+${Math.max(0, avgDelayB - avgDelayA)} ms** delay compared to immediate alerting because it performs bounded cross-probe and control checks before declaring a confirmed incident.
-2. **Network Request Overhead**: NetScope generated **${metrics.policyB.extraVerificationRequests} additional follow-up requests** during investigations. This overhead is strictly bounded by the coordinator's cooldown timers and per-investigation budget limits to prevent request storms.
-
----
-
-## 5. Reproducibility
-To reproduce these exact measurements in the local fault lab:
-\`\`\`bash
-node scripts/run_evaluation.js
-\`\`\`
+Run from the repository root: node scripts/run_evaluation.js.
 `;
 
   fs.writeFileSync(path.resolve('EVALUATION_REPORT.md'), reportContent, 'utf-8');

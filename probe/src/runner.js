@@ -17,6 +17,7 @@ function isBlockedIp(ip, allowPrivateLab = false) {
     if (a === 0 || a >= 224) return true;
     if (a === 127) return !allowPrivateLab;
     if (a === 169 && b === 254) return true; // Link-local & cloud metadata ALWAYS BLOCKED
+    const isPrivate = a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
     if (isPrivate) return !allowPrivateLab;
     if (a === 100 && b >= 64 && b <= 127) return !allowPrivateLab;
     return false;

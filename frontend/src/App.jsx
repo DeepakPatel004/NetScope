@@ -16,9 +16,7 @@ const DeviceOverview = lazy(() => import('./pages/device-tabs/DeviceOverview.jsx
 const DevicePerformance = lazy(() => import('./pages/device-tabs/DevicePerformance.jsx'));
 const DeviceSecurity = lazy(() => import('./pages/device-tabs/DeviceSecurity.jsx'));
 const DeviceLogs = lazy(() => import('./pages/device-tabs/DeviceLogs.jsx'));
-const DeviceAI = lazy(() => import('./pages/device-tabs/DeviceAI.jsx'));
 
-const AIAssistantPage = lazy(() => import('./pages/AIAssistantPage.jsx'));
 const IncidentsPage = lazy(() => import('./pages/IncidentsPage.jsx'));
 const AlertsPage = lazy(() => import('./pages/AlertsPage.jsx'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'));
@@ -58,7 +56,7 @@ function App() {
               <Route path="/alerts" element={<AlertsPage />} />
               <Route path="/incidents" element={<IncidentsPage />} />
               <Route path="/probes" element={<ProbesPage />} />
-              <Route path="/ai" element={<AIAssistantPage />} />
+              <Route path="/ai" element={<Navigate to="/incidents" replace />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/docs" element={<Documentation />} />
@@ -68,7 +66,7 @@ function App() {
                 <Route index element={<DeviceOverview />} />
                 <Route path="host" element={<Navigate to=".." relative="path" replace />} />
                 <Route path="performance" element={<DevicePerformance />} />
-                <Route path="ai" element={<DeviceAI />} />
+                <Route path="ai" element={<Navigate to=".." relative="path" replace />} />
                 <Route path="security" element={<DeviceSecurity />} />
                 <Route path="logs" element={<DeviceLogs />} />
               </Route>

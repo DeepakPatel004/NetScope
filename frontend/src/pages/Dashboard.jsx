@@ -22,7 +22,7 @@ export default function Dashboard() {
     inFlight.current = true;
     setLoading(true);
     try {
-      const [devicesRes, incidentsRes] = await Promise.all([dashboardService.getDevicesStatus(), api.get('/ai/incidents')]);
+      const [devicesRes, incidentsRes] = await Promise.all([dashboardService.getDevicesStatus(), api.get('/incidents')]);
       setDevices(devicesRes.data || []);
       setIncidents(incidentsRes.data?.data || []);
       setLastUpdated(Date.now());

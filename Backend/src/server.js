@@ -1,23 +1,15 @@
 import app from './app.js';
 import config from './config/env.js';
 import prisma from './config/database.js';
-import { startScheduler } from './workers/scheduler.worker.js';
-import { startHealthWorker } from './workers/health.worker.js';
-import { startSSLWorker } from './workers/ssl.worker.js';
-import { startPortScannerWorker } from './workers/port.worker.js';
 import { startNotificationWorker } from './workers/notification.worker.js';
-import { startAssignmentScheduler } from './modules/probe/assignmentScheduler.js';
+import { startAssignmentScheduler, stopAssignmentScheduler } from './modules/probe/assignmentScheduler.js';
 
 const StartServer = async () => {
   try {
     await prisma.$connect();
     console.log('Database Connected');
 
-    // Start workers alongside database
-    startScheduler();
-    startHealthWorker();
-    startSSLWorker();
-    startPortScannerWorker();
+    // Remote probes are the only endpoint execution path.
     startNotificationWorker();
     startAssignmentScheduler();
 
@@ -28,6 +20,7 @@ const StartServer = async () => {
 
     const shutdown = async () => {
       console.log('\nShutting down gracefully');
+      stopAssignmentScheduler();
       await prisma.$disconnect();
       server.close();
       process.exit(0);

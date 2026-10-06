@@ -1,3 +1,5 @@
+> Historical rebuild proposal. This is not an implementation or deployment status report. See README.md for current scope and limitations.
+
 # NetScope — Distributed Incident Verification: Architecture & Implementation Plan
 
 ## 1. System Mission & Scope

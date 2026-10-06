@@ -16,17 +16,15 @@ export default function DeviceDetails() {
   const [showDelete, setShowDelete] = useState(false);
   const fetchData = useCallback(async signal => {
     try {
-      const paths = [`/devices/${id}`, `/dashboard/device/${id}`, `/ssl/${id}`, `/ports/${id}`, `/ai/incidents?deviceId=${id}`];
+      const paths = [`/devices/${id}`, `/dashboard/device/${id}`, `/incidents?deviceId=${id}`];
       const results = await Promise.all(paths.map(path => api.get(path, { signal })));
-      const [device, dashboardDetail, sslLogs, portLogs, incidents] = results.map(response => response.data.data);
+      const [device, dashboardDetail, incidents] = results.map(response => response.data.data);
       setData({
         device: dashboardDetail?.deviceInfo || device,
         analytics: dashboardDetail?.analytics,
         probeMatrix: dashboardDetail?.probeMatrix || [],
         locationResults: dashboardDetail?.locationResults || [],
         healthHistory: dashboardDetail?.timeline || [],
-        sslInfo: sslLogs?.[0] || null,
-        portsInfo: portLogs?.[0] || null,
         incidents,
       });
       setError('');
@@ -40,7 +38,7 @@ export default function DeviceDetails() {
     finally { setBusy(''); }
   };
   const remove = async () => { setDeleting(true); try { await deviceService.deleteDevice(id); navigate('/devices'); } catch { toast.error('Could not delete this device.'); setDeleting(false); } };
-  const tabs = [['Overview', ''], ['Performance', '/performance'], ['Security', '/security'], ['Health logs', '/logs'], ['Assistant', '/ai']];
+  const tabs = [['Overview', ''], ['Performance', '/performance'], ['TLS evidence', '/security'], ['Health logs', '/logs']];
   const latest = data?.healthHistory?.[0];
   return <div className="max-w-7xl mx-auto p-5 sm:p-8 text-slate-100 space-y-6">
     <Link to="/devices" className="text-sm text-slate-400">Devices / {data?.device.name || 'Details'}</Link>
@@ -48,7 +46,7 @@ export default function DeviceDetails() {
     {!data && !error && <p role="status">Loading device…</p>}
     {data && <><header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#2b3036] pb-6"><div><h1 className="text-2xl font-semibold">{data.device.name}</h1><p className="text-sm text-slate-400 mt-2">{data.device.host} · {latest?.status || 'Unknown'} · {data.device.enabled ? 'Monitoring enabled' : 'Monitoring paused'}</p></div><div className="flex gap-2"><button title="Refresh telemetry" aria-label="Refresh telemetry" onClick={() => fetchData()} className="p-2 text-slate-400"><RefreshCw size={17} /></button><Link to={`/devices/edit/${id}`} className="p-2 text-slate-400" aria-label="Edit device"><Pencil size={17} /></Link><button aria-label="Delete device" onClick={() => setShowDelete(true)} className="p-2 text-slate-400 hover:text-rose-300"><Trash2 size={17} /></button></div></header>
     <nav aria-label="Device sections" className="flex gap-1 flex-wrap border-b border-[#2b3036]">{tabs.map(([label, path]) => <NavLink key={path} to={`/devices/${id}${path}`} end={!path} className={({ isActive }) => `px-4 py-3 text-sm border-b-2 ${isActive ? 'border-teal-400 text-white' : 'border-transparent text-slate-400 hover:text-white'}`}>{label}</NavLink>)}</nav>
-    <Outlet context={{ ...data, checking: busy === 'health', sslChecking: busy === 'ssl', portsChecking: busy === 'ports', handleManualCheck: () => check('health'), handleManualSSLCheck: () => check('ssl'), handleManualPortsCheck: () => check('ports'), formatDate: value => value ? new Date(value).toLocaleString() : 'Not recorded' }} />
+    <Outlet context={{ ...data, checking: busy === 'health', handleManualCheck: () => check('health'), formatDate: value => value ? new Date(value).toLocaleString() : 'Not recorded' }} />
     </>}
     {showDelete && <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"><section role="dialog" aria-modal="true" aria-labelledby="delete-title" className="max-w-sm rounded-xl border border-[#2b3036] bg-[#181b1f] p-6 space-y-4"><h2 id="delete-title" className="font-semibold">Delete this device?</h2><p className="text-sm text-slate-400">Its monitoring history will also be deleted.</p><div className="flex justify-end gap-3"><button onClick={() => setShowDelete(false)} className="text-sm text-slate-400">Cancel</button><button disabled={deleting} onClick={remove} className="rounded-lg bg-rose-700 px-3 py-2 text-sm">{deleting ? 'Deleting…' : 'Delete device'}</button></div></section></div>}
   </div>;

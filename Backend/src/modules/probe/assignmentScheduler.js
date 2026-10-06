@@ -3,6 +3,25 @@ import { healthIntervalMs } from '../../workers/schedule-policy.js';
 
 let isScheduling = false;
 
+export async function queueManualCheck(device) {
+  const probes = await prisma.probe.findMany({
+    where: {
+      status: 'ONLINE', isRevoked: false,
+      lastHeartbeatAt: { gte: new Date(Date.now() - 60000) },
+    },
+  });
+  const selected = Array.isArray(device.selectedProbes) ? device.selectedProbes : [];
+  const eligible = probes.filter(probe => !selected.length || selected.includes(probe.id) || selected.includes(probe.region));
+  if (!eligible.length) return 0;
+  const result = await prisma.checkAssignment.createMany({
+    data: eligible.map(probe => ({
+      monitorId: device.id, probeId: probe.id, kind: 'ROUTINE',
+      targetUrl: device.host, status: 'PENDING',
+    })),
+  });
+  return result.count;
+}
+
 /**
  * Durable Check Assignment Scheduler
  * Generates durable check assignments in PostgreSQL for distributed probes
