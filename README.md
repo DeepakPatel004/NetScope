@@ -6,9 +6,9 @@ NetScope checks HTTP/HTTPS endpoints from independently running probes, compares
 
 A failed request is an observation. Understanding where it failed is the engineering problem.
 
-**Node.js · Express · PostgreSQL · Prisma · Redis · React · Docker**
+**Node.js Â· Express Â· PostgreSQL Â· Prisma Â· Redis Â· React Â· Docker**
 
-[Quick start](#run-the-local-lab) · [Architecture](#how-it-works) · [Tests](#verification) · [Deployment](deploy/DEPLOYMENT_GUIDE.md)
+[Quick start](#run-the-local-lab) Â· [Architecture](#how-it-works) Â· [Tests](#verification) Â· [Deployment](deploy/DEPLOYMENT_GUIDE.md)
 
 ## Why it exists
 
@@ -69,7 +69,9 @@ docker compose ps
 | Coordinator API | http://localhost:5000/api/v3 |
 | Fault target | http://localhost:9090/healthy |
 
-The development stack runs database migrations and seeds an operator account:
+The development stack runs database migrations. It starts without creating demo accounts or probes.
+
+For an optional isolated demo, explicitly run `docker compose exec backend npm run seed`. This creates lab probes, sample monitors, and the following operator account:
 
 - Email: `admin@netscope.internal`
 - Password: `AdminPass123!`

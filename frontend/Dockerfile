@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install || echo "No package.json yet, skipping install"
+RUN npm ci
 
 COPY . .
 
