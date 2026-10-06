@@ -6,18 +6,18 @@ export default function DeviceLogs() {
   const safeLogs = Array.isArray(healthHistory) ? healthHistory : [];
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-6">
+    <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-6">
       <div className="flex justify-between items-center mb-6 pb-3 border-b border-zinc-800/80">
         <div>
-          <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-widest font-mono">Recent Health Audit Ledger</h3>
-          <p className="text-xs text-zinc-500 font-mono mt-0.5">Chronological trace of health auditing loops.</p>
+          <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wide font-sans">Recent Health Audit Ledger</h3>
+          <p className="text-xs text-zinc-500 font-sans mt-0.5">Chronological trace of health auditing loops.</p>
         </div>
-        <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Last 50 Sweeps</span>
+        <span className="text-[10px] text-zinc-500 font-sans uppercase tracking-wide">Last 50 Sweeps</span>
       </div>
 
       {safeLogs.length > 0 ? (
         <div className="overflow-x-auto">
-          <table className="w-full text-left font-mono text-xs border-collapse">
+          <table className="w-full text-left font-sans text-xs border-collapse">
             <thead>
               <tr className="text-zinc-500 border-b border-zinc-800/80 pb-2">
                 <th className="pb-3 font-semibold">Timestamp</th>
@@ -47,7 +47,7 @@ export default function DeviceLogs() {
           </table>
         </div>
       ) : (
-        <div className="text-xs font-mono text-zinc-500 py-8 text-center">
+        <div className="text-xs font-sans text-zinc-500 py-8 text-center">
           NO DETAILED AUDIT RECORDS LOGGED
         </div>
       )}

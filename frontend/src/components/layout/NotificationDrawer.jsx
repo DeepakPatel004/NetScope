@@ -57,7 +57,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
       case 'HIGH':
         return <AlertTriangle size={16} className="text-amber-400" />;
       case 'MEDIUM':
-        return <Info size={16} className="text-indigo-400" />;
+        return <Info size={16} className="text-teal-400" />;
       default:
         return <CheckCircle size={16} className="text-emerald-400" />;
     }
@@ -66,15 +66,15 @@ export default function NotificationDrawer({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm transition-opacity">
       <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="w-screen max-w-md bg-[#0F172A] border-l border-slate-800 text-slate-100 shadow-2xl flex flex-col justify-between">
+        <div className="w-screen max-w-md bg-[#181b1f] border-l border-slate-800 text-slate-100 shadow-2xl flex flex-col justify-between">
           
           {/* Header */}
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell size={18} className="text-indigo-400" />
+              <Bell size={18} className="text-teal-400" />
               <h2 className="text-sm font-bold text-white tracking-wide">Observability Alerts</h2>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">
+                <span className="text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30 px-2 py-0.5 rounded-full font-sans">
                   {unreadCount} Unread
                 </span>
               )}
@@ -83,7 +83,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-xs text-slate-400 hover:text-indigo-400 transition flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-slate-400 hover:text-teal-400 transition flex items-center gap-1 cursor-pointer"
                   title="Mark all as read"
                 >
                   <Check size={14} />
@@ -115,7 +115,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                   className={`p-3.5 rounded-xl border text-xs transition-all relative group ${
                     noti.isRead
                       ? 'bg-slate-900/60 border-slate-800/60 opacity-75'
-                      : 'bg-slate-900 border-indigo-500/30 shadow-md'
+                      : 'bg-slate-900 border-teal-500/30 shadow-md'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -123,7 +123,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                       {getSeverityIcon(noti.severity)}
                       <span className="font-bold text-slate-100">{noti.title}</span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                    <span className="text-[10px] font-sans text-slate-400 shrink-0">
                       {new Date(noti.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -131,7 +131,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                   <p className="text-slate-300 leading-relaxed mb-2.5">{noti.message}</p>
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[11px]">
-                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 uppercase tracking-wider">
+                    <span className="text-[9px] font-sans font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 uppercase tracking-wider">
                       {noti.type}
                     </span>
                     
@@ -142,7 +142,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                             onClose();
                             navigate('/incidents');
                           }}
-                          className="text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1 font-semibold cursor-pointer"
+                          className="text-teal-400 hover:text-teal-300 transition flex items-center gap-1 font-semibold cursor-pointer"
                         >
                           <span>View Incident</span>
                           <ExternalLink size={12} />
@@ -172,7 +172,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                 onClose();
                 navigate('/alerts');
               }}
-              className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
+              className="text-xs font-semibold text-teal-400 hover:text-teal-300 transition cursor-pointer"
             >
               Configure Notification Preferences &rarr;
             </button>

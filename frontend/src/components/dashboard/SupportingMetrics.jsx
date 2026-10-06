@@ -20,14 +20,14 @@ export default function SupportingMetrics({ metrics = null, devices = [] }) {
       value: `${totalDevices} Devices`,
       sub: `${upDevices} / ${totalDevices} Endpoints Healthy`,
       icon: Server,
-      color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+      color: 'text-teal-400 bg-teal-500/10 border-teal-500/20',
     },
     {
       title: 'SSL Security Audits',
       value: `${sslCount} HTTPS Targets`,
       sub: 'Automated TLS Expiry Tracking',
       icon: ShieldCheck,
-      color: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+      color: 'text-teal-400 bg-teal-500/10 border-teal-500/20',
     },
     {
       title: 'Platform Availability',
@@ -45,11 +45,11 @@ export default function SupportingMetrics({ metrics = null, devices = [] }) {
         return (
           <div
             key={idx}
-            className="bg-[#111827] border border-[#1E293B] hover:border-slate-700 rounded-xl p-4 flex items-center justify-between transition"
+            className="bg-[#181b1f] border border-[#2b3036] hover:border-slate-700 rounded-xl p-4 flex items-center justify-between transition"
           >
             <div>
               <span className="text-xs font-semibold text-slate-400 block mb-1">{item.title}</span>
-              <span className="text-xl font-extrabold text-white block mb-1">{item.value}</span>
+              <span className="text-xl font-semibold text-white block mb-1">{item.value}</span>
               <span className="text-[11px] font-medium text-slate-500">{item.sub}</span>
             </div>
 

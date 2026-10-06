@@ -150,7 +150,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={!canSubmit || loading}
-              className="w-full rounded-3xl bg-gradient-to-r from-fuchsia-600 to-pink-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition hover:shadow-fuchsia-600/35 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-3xl bg-gradient-to-r from-fuchsia-600 to-pink-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-fuchsia-500/25 transition hover:shadow-fuchsia-600/35 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Creating account…' : 'Create account'}
             </button>

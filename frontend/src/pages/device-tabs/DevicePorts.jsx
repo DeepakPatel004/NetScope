@@ -10,19 +10,19 @@ export default function DevicePorts() {
   } = useOutletContext();
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-6">
+    <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-6">
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-zinc-800/80">
         <div className="flex items-center gap-3">
           <Terminal size={20} className="text-amber-400" />
           <div>
-            <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-widest font-mono">Port Scan Registry</h3>
-            <p className="text-xs text-zinc-500 font-mono mt-0.5">Scanned open TCP listener ports.</p>
+            <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wide font-sans">Port Scan Registry</h3>
+            <p className="text-xs text-zinc-500 font-sans mt-0.5">Scanned open TCP listener ports.</p>
           </div>
         </div>
         <button
           onClick={handleManualPortsCheck}
           disabled={portsChecking}
-          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-mono font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-lg shadow-amber-600/25 border border-amber-400/30 disabled:opacity-50 cursor-pointer"
+          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-sans font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm shadow-amber-600/25 border border-amber-400/30 disabled:opacity-50 cursor-pointer"
         >
           <Terminal size={13} className={`text-white ${portsChecking ? 'animate-pulse' : ''}`} />
           <span>{portsChecking ? 'SCANNING...' : 'SCAN PORTS'}</span>
@@ -34,21 +34,21 @@ export default function DevicePorts() {
           {portsInfo.openPorts.map((port) => (
             <span
               key={port}
-              className="px-4 py-2 bg-zinc-950 border border-zinc-800/85 text-zinc-100 rounded-xl text-xs font-mono tracking-wider font-semibold"
+              className="px-4 py-2 bg-zinc-950 border border-zinc-800/85 text-zinc-100 rounded-xl text-xs font-sans tracking-wider font-semibold"
             >
               PORT: {port}
             </span>
           ))}
         </div>
       ) : (
-        <div className="text-sm font-mono text-zinc-500 py-8 text-center border border-dashed border-zinc-800/80 rounded-xl">
+        <div className="text-sm font-sans text-zinc-500 py-8 text-center border border-dashed border-zinc-800/80 rounded-xl">
           ALL SPECIFIED TARGET PORTS SECURE / CLOSED
         </div>
       )}
 
       {portsInfo && (
-        <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center justify-between text-xs font-mono">
-          <span className="text-zinc-500 uppercase tracking-widest">Last Scanned</span>
+        <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center justify-between text-xs font-sans">
+          <span className="text-zinc-500 uppercase tracking-wide">Last Scanned</span>
           <span className="font-semibold text-zinc-400">
             {new Date(portsInfo.checkedAt).toLocaleString()}
           </span>

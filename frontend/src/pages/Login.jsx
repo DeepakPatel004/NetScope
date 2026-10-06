@@ -41,10 +41,10 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md overflow-hidden rounded-[32px] border border-slate-800 bg-slate-900 shadow-[0_25px_80px_rgba(15,23,42,0.45)]">
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-8 text-white">
-          <p className="text-sm uppercase tracking-[0.35em] text-indigo-100/80">Welcome back</p>
+        <div className="bg-gradient-to-r from-teal-600 to-teal-600 px-8 py-8 text-white">
+          <p className="text-sm uppercase tracking-[0.35em] text-teal-100/80">Welcome back</p>
           <h1 className="mt-4 text-3xl font-semibold">Sign in to NetScope</h1>
-          <p className="mt-3 text-sm text-indigo-100/80 leading-relaxed">
+          <p className="mt-3 text-sm text-teal-100/80 leading-relaxed">
             Access your dashboard, devices, and monitoring tools from a secure account.
           </p>
         </div>
@@ -63,7 +63,7 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                 placeholder="you@example.com"
               />
             </div>
@@ -83,7 +83,7 @@ export default function Login() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                 placeholder="••••••••"
               />
             </div>
@@ -91,7 +91,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={!canSubmit || loading}
-              className="w-full rounded-3xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-3xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-sm  transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>

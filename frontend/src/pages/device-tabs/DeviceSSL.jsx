@@ -11,18 +11,18 @@ export default function DeviceSSL() {
   } = useOutletContext();
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-6">
+    <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-zinc-800/80">
         <div className="flex items-center gap-3">
-          <Shield size={20} className="text-indigo-400" />
+          <Shield size={20} className="text-teal-400" />
           <div>
-            <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-widest font-mono">SSL Security Certificate Status</h3>
-            <p className="text-xs text-zinc-500 font-mono mt-0.5">TLS handshake verification credentials.</p>
+            <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wide font-sans">SSL Security Certificate Status</h3>
+            <p className="text-xs text-zinc-500 font-sans mt-0.5">TLS handshake verification credentials.</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
           {sslInfo && (
-            <span className={`text-xs font-bold font-mono px-3.5 py-1 rounded-full border ${
+            <span className={`text-xs font-bold font-sans px-3.5 py-1 rounded-full border ${
               sslInfo.status === 'VALID'
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                 : sslInfo.status === 'EXPIRING'
@@ -38,7 +38,7 @@ export default function DeviceSSL() {
           <button
             onClick={handleManualSSLCheck}
             disabled={sslChecking}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-mono font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-lg shadow-indigo-600/25 border border-indigo-400/30 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-sans font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm  border border-teal-400/30 disabled:opacity-50 cursor-pointer"
           >
             <Shield size={13} className={`text-white ${sslChecking ? 'animate-pulse' : ''}`} />
             <span>{sslChecking ? 'SCANNING...' : 'SCAN SSL'}</span>
@@ -47,7 +47,7 @@ export default function DeviceSSL() {
       </div>
 
       {sslInfo ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-sm mt-6">
           <div className="space-y-4">
             <div>
               <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">Subject Common Name (Domain)</div>
@@ -96,7 +96,7 @@ export default function DeviceSSL() {
           </div>
         </div>
       ) : (
-        <div className="text-sm font-mono text-zinc-500 py-12 text-center border border-dashed border-zinc-800/80 rounded-xl">
+        <div className="text-sm font-sans text-zinc-500 py-12 text-center border border-dashed border-zinc-800/80 rounded-xl">
           NO ACTIVE SSL/TLS CERTIFICATE LOGS AVAILABLE FOR THIS ENDPOINT
         </div>
       )}

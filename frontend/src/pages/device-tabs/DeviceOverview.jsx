@@ -1,257 +1,177 @@
-import React, { useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from 'recharts';
-import { 
-  Settings, Play, Activity, Server as ServerIcon, Globe, Sparkles, 
-  ShieldAlert, CheckCircle2, AlertTriangle, Cpu, HardDrive, Info, Layers, Box, Terminal
-} from 'lucide-react';
-
-const CustomTooltip = ({ active, payload, label, unit = 'ms' }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-[#0F172A] border border-[#334155] p-2.5 rounded-xl shadow-xl text-xs text-white font-mono">
-        <p className="font-semibold text-slate-400 mb-1">{label}</p>
-        <p className="text-emerald-400 font-bold text-sm">{payload[0].value} {unit}</p>
-      </div>
-    );
-  }
-  return null;
-};
+import React from 'react';
+import { Link, useOutletContext } from 'react-router-dom';
+import { Radio, Globe, CheckCircle2, AlertTriangle, Clock, ShieldAlert } from 'lucide-react';
 
 export default function DeviceOverview() {
-  const navigate = useNavigate();
   const {
+    device,
     analytics,
     healthHistory = [],
-    agentMetrics = [],
+    probeMatrix = [],
+    locationResults = [],
     incidents = [],
-    device = {},
-    capabilities = {},
     checking,
     handleManualCheck,
-  } = useOutletContext() || {};
+  } = useOutletContext();
 
-  const [hostChartTab, setHostChartTab] = useState('cpu'); // 'cpu', 'ram', 'load'
-  const [serviceChartTab, setServiceChartTab] = useState('latency'); // 'latency', 'availability'
+  const latest = healthHistory[0];
+  const active = incidents.filter(i => i.status !== 'RESOLVED');
 
-  const { hostMonitoring, serviceMonitoring, agentConnected } = capabilities;
-
-  const safeLogs = Array.isArray(healthHistory) ? healthHistory : [];
-  const logsReversed = [...safeLogs].reverse();
-
-  // Service Telemetry Chart Data
-  const serviceChartData = logsReversed
-    .filter((h) => h.latency !== undefined && h.latency !== null)
-    .map((h) => ({
-      time: new Date(h.checkedAt || h.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      latency: h.latency || 0,
-      availability: h.status === 'UP' ? 100 : 0,
-    }));
-
-  // Host Telemetry Chart Data
-  const hostChartData = (agentMetrics || []).map((m) => ({
-    time: new Date(m.checkedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    cpu: m.cpuPercent || 0,
-    ram: m.ramPercent || 0,
-    load: m.loadAvg || 0,
-  }));
-
-  const latestLog = safeLogs[0] || {};
-  const latestHostMetric = agentMetrics[agentMetrics.length - 1] || null;
-
-  const latestCpu = latestHostMetric?.cpuPercent || 0;
-  const latestRam = latestHostMetric?.ramPercent || 0;
-  const latestLatency = latestLog?.latency || device.latency || null;
-
-  const activeIncidents = incidents.filter((i) => i.status !== 'RESOLVED');
-
-  const containers = device.containers || [
-    { id: 'd083ab27c6ec', name: 'demo-api', image: 'demo-backend:latest', status: 'Up 19 minutes', ports: '0.0.0.0:5000->5000/tcp' },
-    { id: '2660f4db903e', name: 'demo-redis', image: 'redis:7-alpine', status: 'Up 19 minutes', ports: '0.0.0.0:6379->6379/tcp' }
+  const metrics = [
+    ['Status', latest?.status || 'Unknown'],
+    ['Response Time', latest?.latency == null ? '—' : `${latest.latency} ms`],
+    ['Uptime · 24h', analytics?.uptimePercentage != null ? `${analytics.uptimePercentage}%` : '—'],
+    ['Open Incidents', active.length],
   ];
 
-  const composeProjects = device.dockerComposeProjects || ['netscope-demo'];
-
   return (
-    <div className="space-y-6 font-mono text-xs">
-
-      {/* OVERALL STATUS BANNER */}
-      <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ServerIcon className="text-indigo-400" size={24} />
-          <div>
-            <h2 className="text-base font-extrabold text-white">{device.name} Overview</h2>
-            <p className="text-slate-400 text-[11px]">
-              Agent Connection: <strong className={agentConnected ? 'text-emerald-400' : 'text-amber-400'}>{agentConnected ? '🟢 Connected' : '🔴 Disconnected'}</strong> | Docker Status: <strong className="text-indigo-300">{device.dockerStatus || 'RUNNING'}</strong>
+    <div className="space-y-6 text-xs text-slate-200">
+      {/* Top Metrics Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-[#2b3036] bg-[#181b1f] p-5">
+            <p className="text-slate-400 font-medium">{label}</p>
+            <p className={`text-2xl font-bold mt-3 tabular-nums ${
+              label === 'Status' ? (value === 'UP' ? 'text-emerald-400' : 'text-rose-400') : 'text-white'
+            }`}>
+              {value}
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-[11px]">Overall Health:</span>
-          <span className={`px-3 py-1 rounded-full font-extrabold border ${
-            activeIncidents.length > 0
-              ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 animate-pulse'
-              : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-          }`}>
-            {activeIncidents.length > 0 ? '⚠ DEGRADED' : '● HEALTHY'}
-          </span>
-        </div>
+        ))}
       </div>
 
-      {/* -------------------------------------------------- */}
-      {/* 1. DOCKER & CONTAINER DISCOVERY PANEL             */}
-      {/* -------------------------------------------------- */}
-      <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-          <div className="flex items-center gap-2">
-            <Box size={16} className="text-cyan-400" />
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">ENVIRONMENT & DOCKER CONTAINER DISCOVERY</h3>
+      {/* Multi-Probe Location Vantage Matrix */}
+      <section className="rounded-xl border border-[#2b3036] bg-[#181b1f] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#2b3036] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Radio size={16} className="text-teal-400" /> Endpoint-by-Location Vantage Matrix
+            </h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Independent observations across distributed regional monitoring probes
+            </p>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
-            Compose Projects: {composeProjects.length}
-          </span>
+          <button
+            disabled={checking}
+            onClick={handleManualCheck}
+            className="rounded-lg bg-teal-600 hover:bg-teal-500 px-3.5 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50"
+          >
+            {checking ? 'Queueing…' : 'Run Check Now'}
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {containers.map((c, idx) => (
-            <div key={idx} className="p-4 bg-[#0B0F19] border border-[#1E293B] rounded-xl space-y-2">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-[#2b3036] bg-[#141618] text-slate-400">
+                <th className="px-5 py-3 font-medium">Probe Location</th>
+                <th className="px-5 py-3 font-medium">Region</th>
+                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium">Total Latency</th>
+                <th className="px-5 py-3 font-medium">DNS</th>
+                <th className="px-5 py-3 font-medium">TCP</th>
+                <th className="px-5 py-3 font-medium">TLS</th>
+                <th className="px-5 py-3 font-medium">TTFB</th>
+                <th className="px-5 py-3 font-medium">Stage</th>
+                <th className="px-5 py-3 font-medium">Last Observed</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#2b3036]/50">
+              {probeMatrix.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="px-5 py-8 text-center text-slate-500">
+                    No multi-probe observations recorded yet. Probes will report observations on their next schedule cycle.
+                  </td>
+                </tr>
+              ) : (
+                probeMatrix.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-white/[0.02] transition">
+                    <td className="px-5 py-3.5 font-semibold text-white">
+                      {item.probeName || item.probeId}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[11px] text-slate-300">
+                        <Globe size={11} className="text-teal-400" />
+                        {item.region || '—'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex items-center gap-1 font-bold ${
+                        item.status === 'UP' ? 'text-emerald-400' : 'text-rose-400'
+                      }`}>
+                        {item.status === 'UP' ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 font-bold text-white tabular-nums">
+                      {item.latency != null ? `${item.latency} ms` : '—'}
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.dnsTime != null ? `${item.dnsTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.tcpTime != null ? `${item.tcpTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.tlsTime != null ? `${item.tlsTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.ttfbTime != null ? `${item.ttfbTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-400">
+                      {item.failureStage || (item.status === 'UP' ? 'OK' : 'UNKNOWN')}
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-400">
+                      {item.observedAt ? new Date(item.observedAt).toLocaleTimeString() : '—'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Open Incidents Box */}
+      {active.length > 0 && (
+        <section className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-5 space-y-3">
+          <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
+            <ShieldAlert size={16} /> Active Incident Detected
+          </div>
+          {active.map(incident => (
+            <Link
+              key={incident.id}
+              to={`/incidents?id=${incident.id}`}
+              className="block rounded-lg border border-[#2b3036] bg-[#181b1f] p-4 text-xs hover:border-slate-600 transition"
+            >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-white text-sm flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  {c.name}
+                <span className="font-semibold text-rose-400 uppercase tracking-wide">
+                  {incident.assessment || incident.type || 'INCIDENT'}
                 </span>
-                <span className="text-[10px] text-emerald-400 font-bold px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20">
-                  {c.status}
-                </span>
+                <span className="text-slate-400 font-mono">Priority: {incident.priority}</span>
               </div>
-              <p className="text-[11px] text-slate-400 truncate">Image: <code className="text-indigo-300">{c.image}</code></p>
-              <p className="text-[10px] text-slate-500 truncate">Ports: {c.ports || 'Internal'}</p>
-            </div>
+              <p className="text-slate-300 mt-2">{incident.summary || incident.error}</p>
+            </Link>
           ))}
-        </div>
-      </div>
+        </section>
+      )}
 
-      {/* -------------------------------------------------- */}
-      {/* 2. HOST HEALTH                                    */}
-      {/* -------------------------------------------------- */}
-      <div className="bg-[#111827] border border-[#1E293B] rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-          <div className="flex items-center gap-2">
-            <Cpu size={16} className="text-emerald-400" />
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">HOST HEALTH TELEMETRY</h3>
+      {/* Target Configuration Info */}
+      <section className="rounded-xl border border-[#2b3036] bg-[#181b1f] p-5">
+        <h3 className="font-semibold text-white mb-3">Monitor Configuration</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-slate-400 text-xs">
+          <div>
+            <span className="block text-slate-500 text-[11px]">Check Interval</span>
+            <span className="text-white font-medium">{device.interval} seconds</span>
           </div>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-            agentConnected ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-          }`}>
-            Agent: {agentConnected ? '● Connected' : '🔴 Offline'}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">CPU Usage</span>
-            <span className="text-xl font-extrabold text-white mt-1 block">
-              {latestHostMetric?.cpuPercent !== undefined ? `${latestHostMetric.cpuPercent.toFixed(1)}%` : '—'}
-            </span>
-            <span className="text-[10px] text-slate-500">Host Core</span>
+          <div>
+            <span className="block text-slate-500 text-[11px]">Request Timeout</span>
+            <span className="text-white font-medium">{device.timeoutMs || 10000} ms</span>
           </div>
-
-          <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">RAM Usage</span>
-            <span className="text-xl font-extrabold text-white mt-1 block">
-              {latestHostMetric?.ramPercent !== undefined ? `${latestHostMetric.ramPercent.toFixed(1)}%` : '—'}
-            </span>
-            <span className="text-[10px] text-slate-500">
-              {latestHostMetric?.ramUsedMb ? `${latestHostMetric.ramUsedMb}MB` : 'Memory'}
-            </span>
+          <div>
+            <span className="block text-slate-500 text-[11px]">Baseline Latency</span>
+            <span className="text-white font-medium">{device.baselineLatency ? `${device.baselineLatency} ms` : 'Uncalibrated'}</span>
           </div>
-
-          <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Disk Usage</span>
-            <span className="text-xl font-extrabold text-white mt-1 block">
-              {latestHostMetric?.diskPercent !== undefined ? `${latestHostMetric.diskPercent.toFixed(1)}%` : '—'}
+          <div>
+            <span className="block text-slate-500 text-[11px]">State</span>
+            <span className={`font-medium ${device.enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+              {device.enabled ? 'Active' : 'Paused'}
             </span>
-            <span className="text-[10px] text-slate-500">Storage</span>
-          </div>
-
-          <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Load Average</span>
-            <span className="text-xl font-extrabold text-white mt-1 block">
-              {latestHostMetric?.loadAvg !== undefined ? latestHostMetric.loadAvg : '—'}
-            </span>
-            <span className="text-[10px] text-slate-500">1m average</span>
-          </div>
-
-          <div className="bg-[#0B0F19] border border-[#1E293B] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Network Traffic</span>
-            <span className="text-xl font-extrabold text-white mt-1 block">
-              {latestHostMetric?.netBytesSent ? `${(latestHostMetric.netBytesSent / (1024 * 1024)).toFixed(1)}MB` : '—'}
-            </span>
-            <span className="text-[10px] text-slate-500">Tx Throughput</span>
           </div>
         </div>
-
-        {/* Host Charts */}
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-slate-400 font-bold uppercase">Host Metric Trend</span>
-            <div className="flex items-center gap-2">
-              {['cpu', 'ram', 'load'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setHostChartTab(tab)}
-                  className={`px-3 py-1 rounded-lg font-bold uppercase transition cursor-pointer ${
-                    hostChartTab === tab ? 'bg-indigo-600 text-white' : 'bg-[#0B0F19] text-slate-400 border border-[#1E293B]'
-                  }`}
-                >
-                  [{tab}]
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="h-48 w-full bg-[#0B0F19] border border-[#1E293B] rounded-xl p-3">
-            {hostChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={hostChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="hostGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                  <XAxis dataKey="time" stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip content={<CustomTooltip unit={hostChartTab === 'load' ? '' : '%'} />} />
-                  <Area
-                    type="monotone"
-                    dataKey={hostChartTab}
-                    stroke="#6366F1"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#hostGrad)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-500 font-bold">
-                Waiting for host telemetry data...
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
+      </section>
     </div>
   );
 }

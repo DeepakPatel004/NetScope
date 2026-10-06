@@ -32,19 +32,19 @@ export function ToastProvider({ children }) {
         {toasts.map((item) => (
           <div
             key={item.id}
-            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all duration-300 animate-slide-in ${
+            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl border backdrop-blur-xl shadow-2xl transition-colors duration-150 animate-slide-in ${
               item.type === 'success'
-                ? 'bg-slate-900/90 border-emerald-500/30 text-emerald-300 shadow-emerald-950/40'
+                ? 'bg-slate-900/90 border-emerald-500/30 text-emerald-300 '
                 : item.type === 'error'
-                ? 'bg-slate-900/90 border-rose-500/30 text-rose-300 shadow-rose-950/40'
-                : 'bg-slate-900/90 border-indigo-500/30 text-indigo-300 shadow-indigo-950/40'
+                ? 'bg-slate-900/90 border-rose-500/30 text-rose-300 '
+                : 'bg-slate-900/90 border-teal-500/30 text-teal-300 '
             }`}
           >
             <div className="flex items-center gap-3">
               {item.type === 'success' && <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />}
               {item.type === 'error' && <AlertTriangle size={18} className="text-rose-400 shrink-0" />}
-              {item.type === 'info' && <Info size={18} className="text-indigo-400 shrink-0" />}
-              <span className="text-xs font-mono font-medium text-slate-100 leading-snug">{item.message}</span>
+              {item.type === 'info' && <Info size={18} className="text-teal-400 shrink-0" />}
+              <span className="text-xs font-sans font-medium text-slate-100 leading-snug">{item.message}</span>
             </div>
             <button
               onClick={() => removeToast(item.id)}

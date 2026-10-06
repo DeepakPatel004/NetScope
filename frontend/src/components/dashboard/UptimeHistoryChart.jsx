@@ -41,10 +41,10 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-[#0F172A] border border-[#334155] p-2.5 rounded-lg shadow-xl text-xs text-white">
+      <div className="bg-[#181b1f] border border-[#334155] p-2.5 rounded-lg shadow-sm text-xs text-white">
         <p className="font-semibold text-slate-400 mb-1">{label}</p>
         <p className="text-[#10B981] font-bold text-sm">Uptime: {payload[0].value}%</p>
-        <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
+        <p className="text-[10px] text-slate-400 mt-0.5 font-sans">
           {data.hasData ? `${data.count} telemetry checks` : 'No downtime recorded'}
         </p>
       </div>
@@ -58,7 +58,7 @@ export default function UptimeHistoryChart({ healthHistory = [] }) {
   const chartData = generateRealLast7Days(healthHistory);
 
   return (
-    <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-5 flex flex-col justify-between">
+    <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-5 flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
@@ -71,9 +71,9 @@ export default function UptimeHistoryChart({ healthHistory = [] }) {
       <div className="h-44 w-full my-1">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-            <XAxis dataKey="date" stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} />
-            <YAxis stroke="#64748B" fontSize={10} tickLine={false} axisLine={false} domain={[90, 100]} ticks={[90, 92.5, 95, 97.5, 100]} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#2b3036" vertical={false} />
+            <XAxis dataKey="date" stroke="#8b949e" fontSize={10} tickLine={false} axisLine={false} />
+            <YAxis stroke="#8b949e" fontSize={10} tickLine={false} axisLine={false} domain={[90, 100]} ticks={[90, 92.5, 95, 97.5, 100]} />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="uptime" fill="#10B981" radius={[4, 4, 0, 0]} barSize={22} />
           </BarChart>
@@ -81,10 +81,10 @@ export default function UptimeHistoryChart({ healthHistory = [] }) {
       </div>
 
       {/* Link Footer */}
-      <div className="border-t border-[#1E293B] pt-3 text-right">
+      <div className="border-t border-[#2b3036] pt-3 text-right">
         <button
           onClick={() => navigate('/reports')}
-          className="text-xs font-semibold text-[#818CF8] hover:text-indigo-300 transition cursor-pointer"
+          className="text-xs font-semibold text-[#5eead4] hover:text-teal-300 transition cursor-pointer"
         >
           View Full Report &rarr;
         </button>

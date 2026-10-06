@@ -2,8 +2,12 @@ version: '3.8'
 name: netscope
 
 services:
+  # -------------------------------------------------------------
+  # 1. Central Infrastructure Services
+  # -------------------------------------------------------------
   postgres:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -12,52 +16,98 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d netscope"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
-
-  ai-service:
-    build:
-      context: ./ai_service
-    ports:
-      - "8000:8000"
-    environment:
-      - PORT=8000
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
-      - AI_ENABLED=true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   backend:
     build:
       context: ./Backend
+    restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/netscope?schema=public
       - REDIS_URL=redis://redis:6379
-      - AI_SERVICE_URL=http://ai-service:8000
       - PORT=5000
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    volumes:
-      - ./Backend:/app
-      - /app/node_modules
+      - NODE_ENV=development
+      - JWT_SECRET=local-development-change-this-secret
+      - ALLOW_PRIVATE_LAB_NETWORKS=true
     depends_on:
-      - postgres
-      - redis
-      - ai-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   frontend:
     build:
       context: ./frontend
+    restart: unless-stopped
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     environment:
-      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_BASE_URL=http://localhost:5000/api/v3
+    depends_on:
+      - backend
+
+  # -------------------------------------------------------------
+  # 2. Controlled Fault Lab Target (Mock Server)
+  # -------------------------------------------------------------
+  fault-target:
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./fault_lab:/app
+    command: ["node", "target_server.js"]
+    ports:
+      - "9090:9090"
+
+  # -------------------------------------------------------------
+  # 3. Independent Remote Monitoring Probes (Simulated Lab Locations)
+  # -------------------------------------------------------------
+  probe-us-east-lab:
+    build:
+      context: ./probe
+    restart: unless-stopped
+    environment:
+      - COORDINATOR_URL=http://backend:5000
+      - PROBE_TOKEN=nsp_probe_lab_us_east_secret_token_123
+      - PROBE_REGION=lab-simulated-us-east
+      - POLL_INTERVAL_MS=3000
+      - HEARTBEAT_INTERVAL_MS=15000
+      - ALLOW_PRIVATE_LAB_NETWORKS=true
+    depends_on:
+      - backend
+      - fault-target
+
+  probe-eu-west-lab:
+    build:
+      context: ./probe
+    restart: unless-stopped
+    environment:
+      - COORDINATOR_URL=http://backend:5000
+      - PROBE_TOKEN=nsp_probe_lab_eu_west_secret_token_456
+      - PROBE_REGION=lab-simulated-eu-west
+      - POLL_INTERVAL_MS=3000
+      - HEARTBEAT_INTERVAL_MS=15000
+      - ALLOW_PRIVATE_LAB_NETWORKS=true
+    depends_on:
+      - backend
+      - fault-target
 
 volumes:
   postgres_data:

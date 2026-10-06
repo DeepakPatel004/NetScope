@@ -29,7 +29,7 @@ export default function RecentAlertsTable({ alerts = [], devices = [] }) {
       }));
 
   return (
-    <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-5 flex flex-col justify-between">
+    <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-5 flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
@@ -42,7 +42,7 @@ export default function RecentAlertsTable({ alerts = [], devices = [] }) {
         </h3>
         <button
           onClick={() => navigate('/alerts')}
-          className="text-xs font-semibold text-[#818CF8] hover:text-indigo-300 transition cursor-pointer"
+          className="text-xs font-semibold text-[#5eead4] hover:text-teal-300 transition cursor-pointer"
         >
           View all &rarr;
         </button>
@@ -53,7 +53,7 @@ export default function RecentAlertsTable({ alerts = [], devices = [] }) {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-[#1E293B] text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+              <tr className="border-b border-[#2b3036] text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
                 <th className="pb-3 pr-4">Severity</th>
                 <th className="pb-3 px-4">Device</th>
                 <th className="pb-3 px-4">Type</th>
@@ -61,7 +61,7 @@ export default function RecentAlertsTable({ alerts = [], devices = [] }) {
                 <th className="pb-3 pl-4 text-right">Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1E293B]/60 text-slate-300">
+            <tbody className="divide-y divide-[#2b3036]/60 text-slate-300">
               {realAlerts.map((alert) => {
                 const badgeStyle = SEVERITY_BADGES[alert.severity] || SEVERITY_BADGES.INFO;
                 
@@ -75,7 +75,7 @@ export default function RecentAlertsTable({ alerts = [], devices = [] }) {
                   : (alert.summary || alert.error || 'System metric alert');
 
                 return (
-                  <tr key={alert.id} className="hover:bg-[#0B0F19]/50 transition duration-150">
+                  <tr key={alert.id} className="hover:bg-[#101214]/50 transition duration-150">
                     <td className="py-3 pr-4">
                       <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${badgeStyle}`}>
                         {alert.severity || 'INFO'}
@@ -95,7 +95,7 @@ export default function RecentAlertsTable({ alerts = [], devices = [] }) {
           </table>
         </div>
       ) : (
-        <div className="py-12 flex flex-col items-center justify-center text-center space-y-2 border border-dashed border-[#1E293B] rounded-xl">
+        <div className="py-12 flex flex-col items-center justify-center text-center space-y-2 border border-dashed border-[#2b3036] rounded-xl">
           <CheckCircle2 size={32} className="text-emerald-400" />
           <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wide">No Active Alerts</h4>
           <p className="text-xs text-slate-500 max-w-sm font-normal">

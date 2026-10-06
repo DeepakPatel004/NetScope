@@ -6,7 +6,7 @@ const STATUS_COLORS = {
   Healthy: '#10B981',
   Warning: '#F59E0B',
   Critical: '#EF4444',
-  Unknown: '#64748B',
+  Unknown: '#8b949e',
 };
 
 export default function DeviceStatusDonut({ statusData = null, totalCount = 24 }) {
@@ -22,7 +22,7 @@ export default function DeviceStatusDonut({ statusData = null, totalCount = 24 }
   const total = statusData ? statusData.reduce((acc, curr) => acc + curr.value, 0) : totalCount;
 
   return (
-    <div className="bg-[#111827] border border-[#1E293B] rounded-xl p-5 flex flex-col justify-between">
+    <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-5 flex flex-col justify-between">
       {/* Header */}
       <div>
         <h3 className="text-sm font-bold text-white tracking-wide">Device Status</h3>
@@ -45,14 +45,14 @@ export default function DeviceStatusDonut({ statusData = null, totalCount = 24 }
                 dataKey="value"
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#64748B'} stroke="none" />
+                  <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#8b949e'} stroke="none" />
                 ))}
               </Pie>
             </PieChart>
           </ResponsiveContainer>
           {/* Center Text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-lg font-extrabold text-white">{total}</span>
+            <span className="text-lg font-semibold text-white">{total}</span>
             <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Total</span>
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function DeviceStatusDonut({ statusData = null, totalCount = 24 }
               <div className="flex items-center gap-2">
                 <span
                   className="w-2.5 h-2.5 rounded-full inline-block"
-                  style={{ backgroundColor: STATUS_COLORS[item.name] || '#64748B' }}
+                  style={{ backgroundColor: STATUS_COLORS[item.name] || '#8b949e' }}
                 />
                 <span className="text-slate-300 font-medium">{item.name}</span>
               </div>
@@ -75,10 +75,10 @@ export default function DeviceStatusDonut({ statusData = null, totalCount = 24 }
       </div>
 
       {/* View All Devices Link */}
-      <div className="border-t border-[#1E293B] pt-3 text-left">
+      <div className="border-t border-[#2b3036] pt-3 text-left">
         <button
           onClick={() => navigate('/devices')}
-          className="text-xs font-semibold text-[#818CF8] hover:text-indigo-300 transition flex items-center gap-1 cursor-pointer"
+          className="text-xs font-semibold text-[#5eead4] hover:text-teal-300 transition flex items-center gap-1 cursor-pointer"
         >
           View all devices &rarr;
         </button>

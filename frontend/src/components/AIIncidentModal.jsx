@@ -52,8 +52,8 @@ export default function AIIncidentModal({ incident, onClose }) {
     >
       <div
         style={{
-          background: '#0f172a',
-          border: '1px solid #1e293b',
+          background: '#181b1f',
+          border: '1px solid #2b3036',
           borderRadius: '16px',
           maxWidth: '700px',
           width: '100%',
@@ -68,7 +68,7 @@ export default function AIIncidentModal({ incident, onClose }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '8px' }}>
-              <Sparkles size={24} color="#818cf8" />
+              <Sparkles size={24} color="#5eead4" />
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: '1.25rem' }}>AI Incident Intelligence Diagnosis</h3>
@@ -122,8 +122,8 @@ export default function AIIncidentModal({ incident, onClose }) {
         </div>
 
         {/* Incident Summary */}
-        <div style={{ marginBottom: '20px', background: '#1e293b', padding: '16px', borderRadius: '12px' }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ marginBottom: '20px', background: '#2b3036', padding: '16px', borderRadius: '12px' }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#5eead4', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileText size={18} /> Incident Summary
           </h4>
           <p style={{ margin: 0, fontSize: '0.9rem', color: '#cbd5e1', lineHeight: 1.6 }}>
@@ -179,7 +179,7 @@ export default function AIIncidentModal({ incident, onClose }) {
               {loadingTimeline ? 'Generating Timeline Summary...' : 'Generate Incident Timeline'}
             </button>
           ) : (
-            <div style={{ background: '#0f172a', border: '1px solid #334155', padding: '14px', borderRadius: '8px' }}>
+            <div style={{ background: '#181b1f', border: '1px solid #334155', padding: '14px', borderRadius: '8px' }}>
               <h5 style={{ margin: '0 0 6px 0', color: '#60a5fa' }}>Timeline Summary</h5>
               <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#cbd5e1' }}>
                 {timeline.timeline_summary}

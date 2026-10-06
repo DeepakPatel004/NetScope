@@ -25,7 +25,7 @@ export default function DeviceAI() {
 
   const submitPrompt = async (promptText) => {
     const trimmed = promptText?.trim();
-    if (!trimmed) return;
+    if (!trimmed || loading) return;
 
     const userMessage = { role: 'user', text: trimmed };
     setMessages((prev) => [...prev, userMessage]);
@@ -33,7 +33,7 @@ export default function DeviceAI() {
     setLoading(true);
 
     try {
-      const response = await deviceService.analyzeDevice(device.id);
+      const response = await deviceService.analyzeDevice(device.id, trimmed);
       const summary = response?.summary || 'I could not generate a summary right now.';
       const recommendations = response?.recommendations || [];
 
@@ -67,14 +67,14 @@ export default function DeviceAI() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-600/10 via-zinc-900 to-zinc-950 p-6">
+      <div className="rounded-xl border border-teal-500/20 bg-gradient-to-br from-teal-600/10 via-zinc-900 to-zinc-950 p-6">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-indigo-600/20 p-2 text-indigo-300">
+          <div className="rounded-xl bg-teal-600/20 p-2 text-teal-300">
             <Sparkles size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-100 font-mono">AI Assistant</h3>
-            <p className="text-xs text-zinc-400 font-mono mt-1">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-100 font-sans">AI Assistant</h3>
+            <p className="text-xs text-zinc-400 font-sans mt-1">
               Chat with the assistant about {currentDeviceLabel}.
             </p>
           </div>
@@ -86,7 +86,7 @@ export default function DeviceAI() {
               key={prompt}
               onClick={() => submitPrompt(prompt)}
               disabled={loading}
-              className="rounded-full border border-zinc-700/80 bg-zinc-950/70 px-3 py-1.5 text-[11px] font-mono uppercase tracking-widest text-zinc-300 hover:border-indigo-500/40 hover:text-white"
+              className="rounded-full border border-zinc-700/80 bg-zinc-950/70 px-3 py-1.5 text-[11px] font-sans uppercase tracking-wide text-zinc-300 hover:border-teal-500/40 hover:text-white"
             >
               {prompt}
             </button>
@@ -94,7 +94,7 @@ export default function DeviceAI() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/70 p-4">
+      <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-4">
         <div className="space-y-3">
           {messages.map((message, index) => (
             <div
@@ -102,13 +102,13 @@ export default function DeviceAI() {
               className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl border px-4 py-3 ${
+                className={`max-w-[85%] rounded-xl border px-4 py-3 ${
                   message.role === 'user'
-                    ? 'border-indigo-500/30 bg-indigo-600/15 text-zinc-100'
+                    ? 'border-teal-500/30 bg-teal-600/15 text-zinc-100'
                     : 'border-zinc-800/80 bg-zinc-950/80 text-zinc-200'
                 }`}
               >
-                <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-mono">
+                <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-sans">
                   {message.role === 'user' ? <Sparkles size={12} /> : <Bot size={12} />}
                   {message.role === 'user' ? 'You' : 'Assistant'}
                 </div>
@@ -117,7 +117,7 @@ export default function DeviceAI() {
                   <ul className="mt-3 space-y-2 text-sm text-zinc-300">
                     {message.recommendations.map((item, itemIndex) => (
                       <li key={`${message.role}-${itemIndex}`} className="flex gap-2">
-                        <span className="text-indigo-400">•</span>
+                        <span className="text-teal-400">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -129,19 +129,19 @@ export default function DeviceAI() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-2xl border border-zinc-800/80 bg-zinc-900/70 p-3">
-        <label className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-mono">Ask the assistant</label>
+      <form onSubmit={handleSubmit} className="rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-3">
+        <label className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-sans">Ask the assistant</label>
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={`Ask about ${currentDeviceLabel}...`}
-            className="flex-1 rounded-xl border border-zinc-800/80 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-indigo-500"
+            className="flex-1 rounded-xl border border-zinc-800/80 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-teal-500"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-teal-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             <SendHorizontal size={15} />
             Send

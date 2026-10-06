@@ -28,7 +28,7 @@ export default function DeviceTable({ refreshTrigger }) {
       case 'WEBSITE':
         return <Globe size={14} className="text-blue-400" />;
       case 'API':
-        return <Shield size={14} className="text-violet-400" />;
+        return <Shield size={14} className="text-teal-400" />;
       case 'IP':
         return <Terminal size={14} className="text-amber-400" />;
       default:
@@ -38,24 +38,24 @@ export default function DeviceTable({ refreshTrigger }) {
 
   if (loading && devices.length === 0) {
     return (
-      <div className="mt-8 bg-slate-900/30 border border-slate-900 rounded-2xl p-8 text-center text-slate-500 animate-pulse">
-        <Activity className="mx-auto mb-3 animate-spin text-indigo-500" size={24} />
+      <div className="mt-8 bg-slate-900/30 border border-slate-900 rounded-xl p-8 text-center text-slate-500 animate-pulse">
+        <Activity className="mx-auto mb-3 animate-spin text-teal-500" size={24} />
         <span className="text-sm font-semibold">Updating device records...</span>
       </div>
     );
   }
 
   return (
-    <div className="mt-8 bg-slate-900/40 border border-slate-900 rounded-2xl overflow-hidden backdrop-blur-md">
+    <div className="mt-8 bg-slate-900/40 border border-slate-900 rounded-xl overflow-hidden backdrop-blur-md">
       <div className="p-6 border-b border-slate-850 flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
             Monitored Services
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">Click any entry to view detailed health logs and check histories.</p>
         </div>
-        <span className="text-xs font-bold bg-slate-850 px-2.5 py-1 rounded-lg text-indigo-400">
+        <span className="text-xs font-bold bg-slate-850 px-2.5 py-1 rounded-lg text-teal-400">
           {devices.length} Devices
         </span>
       </div>
@@ -84,7 +84,7 @@ export default function DeviceTable({ refreshTrigger }) {
                   <p className="font-semibold text-slate-200 group-hover:text-white text-sm transition-colors">
                     {device.name}
                   </p>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5 max-w-xs truncate">{device.host}</p>
+                  <p className="text-xs text-slate-500 font-sans mt-0.5 max-w-xs truncate">{device.host}</p>
                 </td>
 
                 {/* Device Type */}
@@ -116,10 +116,10 @@ export default function DeviceTable({ refreshTrigger }) {
                 </td>
 
                 {/* Latency */}
-                <td className="p-5 text-sm font-semibold text-slate-300 font-mono">
+                <td className="p-5 text-sm font-semibold text-slate-300 font-sans">
                   {device.latency ? (
                     <span className="flex items-center gap-1">
-                      <Activity size={12} className="text-indigo-400/80" />
+                      <Activity size={12} className="text-teal-400/80" />
                       {device.latency} ms
                     </span>
                   ) : (
@@ -140,7 +140,7 @@ export default function DeviceTable({ refreshTrigger }) {
 
                 {/* Action Arrow */}
                 <td className="p-5 text-right">
-                  <button className="p-1.5 bg-slate-900 group-hover:bg-indigo-600 text-slate-500 group-hover:text-white rounded-lg border border-slate-800 group-hover:border-indigo-500 transition-all duration-200">
+                  <button className="p-1.5 bg-slate-900 group-hover:bg-teal-600 text-slate-500 group-hover:text-white rounded-lg border border-slate-800 group-hover:border-teal-500 transition-all duration-200">
                     <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </td>
@@ -152,7 +152,7 @@ export default function DeviceTable({ refreshTrigger }) {
               <tr>
                 <td colSpan="6" className="p-12 text-center">
                   <div className="max-w-md mx-auto flex flex-col items-center">
-                    <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 text-indigo-400 rounded-full mb-4">
+                    <div className="p-4 bg-teal-500/5 border border-teal-500/10 text-teal-400 rounded-full mb-4">
                       <h1 size={32} />
                     </div>
                     <h3 className="text-base font-bold text-slate-200">No Services Configured</h3>
