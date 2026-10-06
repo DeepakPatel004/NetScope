@@ -25,14 +25,14 @@ export default function DeviceOverview() {
   ];
 
   return (
-    <div className="space-y-6 text-xs text-slate-200">
+    <div className="space-y-6 text-xs text-slate-800">
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-[#2b3036] bg-[#181b1f] p-5">
-            <p className="text-slate-400 font-medium">{label}</p>
+          <div key={label} className="rounded-xl border border-[#e2e8f0] bg-[#ffffff] p-5">
+            <p className="text-slate-600 font-medium">{label}</p>
             <p className={`text-2xl font-bold mt-3 tabular-nums ${
-              label === 'Status' ? (value === 'UP' ? 'text-emerald-400' : 'text-rose-400') : 'text-white'
+              label === 'Status' ? (value === 'UP' ? 'text-emerald-700' : 'text-rose-700') : 'text-slate-900'
             }`}>
               {value}
             </p>
@@ -41,13 +41,13 @@ export default function DeviceOverview() {
       </div>
 
       {/* Multi-Probe Location Vantage Matrix */}
-      <section className="rounded-xl border border-[#2b3036] bg-[#181b1f] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#2b3036] flex flex-wrap items-center justify-between gap-3">
+      <section className="rounded-xl border border-[#e2e8f0] bg-[#ffffff] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Radio size={16} className="text-teal-400" /> Endpoint-by-Location Vantage Matrix
+            <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <Radio size={16} className="text-teal-700" /> Endpoint-by-Location Vantage Matrix
             </h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-600 mt-0.5">
               Independent observations across distributed regional monitoring probes
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function DeviceOverview() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-[#2b3036] bg-[#141618] text-slate-400">
+              <tr className="border-b border-[#e2e8f0] bg-[#f1f5f9] text-slate-600">
                 <th className="px-5 py-3 font-medium">Probe Location</th>
                 <th className="px-5 py-3 font-medium">Region</th>
                 <th className="px-5 py-3 font-medium">Status</th>
@@ -76,7 +76,7 @@ export default function DeviceOverview() {
                 <th className="px-5 py-3 font-medium">Last Observed</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2b3036]/50">
+            <tbody className="divide-y divide-[#e2e8f0]/50">
               {probeMatrix.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-5 py-8 text-center text-slate-500">
@@ -86,34 +86,34 @@ export default function DeviceOverview() {
               ) : (
                 probeMatrix.map((item, idx) => (
                   <tr key={idx} className="hover:bg-white/[0.02] transition">
-                    <td className="px-5 py-3.5 font-semibold text-white">
+                    <td className="px-5 py-3.5 font-semibold text-slate-900">
                       {item.probeName || item.probeId}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[11px] text-slate-300">
-                        <Globe size={11} className="text-teal-400" />
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 border border-slate-300 font-mono text-[11px] text-slate-700">
+                        <Globe size={11} className="text-teal-700" />
                         {item.region || '—'}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={`inline-flex items-center gap-1 font-bold ${
-                        item.status === 'UP' ? 'text-emerald-400' : 'text-rose-400'
+                        item.status === 'UP' ? 'text-emerald-700' : 'text-rose-700'
                       }`}>
                         {item.status === 'UP' ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 font-bold text-white tabular-nums">
+                    <td className="px-5 py-3.5 font-bold text-slate-900 tabular-nums">
                       {item.latency != null ? `${item.latency} ms` : '—'}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.dnsTime != null ? `${item.dnsTime} ms` : '—'}</td>
-                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.tcpTime != null ? `${item.tcpTime} ms` : '—'}</td>
-                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.tlsTime != null ? `${item.tlsTime} ms` : '—'}</td>
-                    <td className="px-5 py-3.5 text-slate-400 tabular-nums">{item.ttfbTime != null ? `${item.ttfbTime} ms` : '—'}</td>
-                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-400">
+                    <td className="px-5 py-3.5 text-slate-600 tabular-nums">{item.dnsTime != null ? `${item.dnsTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 text-slate-600 tabular-nums">{item.tcpTime != null ? `${item.tcpTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 text-slate-600 tabular-nums">{item.tlsTime != null ? `${item.tlsTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 text-slate-600 tabular-nums">{item.ttfbTime != null ? `${item.ttfbTime} ms` : '—'}</td>
+                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-600">
                       {item.failureStage || (item.status === 'UP' ? 'OK' : 'UNKNOWN')}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-400">
+                    <td className="px-5 py-3.5 text-slate-600">
                       {item.observedAt ? new Date(item.observedAt).toLocaleTimeString() : '—'}
                     </td>
                   </tr>
@@ -127,46 +127,46 @@ export default function DeviceOverview() {
       {/* Open Incidents Box */}
       {active.length > 0 && (
         <section className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-5 space-y-3">
-          <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
+          <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
             <ShieldAlert size={16} /> Active Incident Detected
           </div>
           {active.map(incident => (
             <Link
               key={incident.id}
               to={`/incidents?id=${incident.id}`}
-              className="block rounded-lg border border-[#2b3036] bg-[#181b1f] p-4 text-xs hover:border-slate-600 transition"
+              className="block rounded-lg border border-[#e2e8f0] bg-[#ffffff] p-4 text-xs hover:border-slate-300 transition"
             >
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-rose-400 uppercase tracking-wide">
+                <span className="font-semibold text-rose-700 uppercase tracking-wide">
                   {incident.assessment || incident.type || 'INCIDENT'}
                 </span>
-                <span className="text-slate-400 font-mono">Priority: {incident.priority}</span>
+                <span className="text-slate-600 font-mono">Priority: {incident.priority}</span>
               </div>
-              <p className="text-slate-300 mt-2">{incident.summary || incident.error}</p>
+              <p className="text-slate-700 mt-2">{incident.summary || incident.error}</p>
             </Link>
           ))}
         </section>
       )}
 
       {/* Target Configuration Info */}
-      <section className="rounded-xl border border-[#2b3036] bg-[#181b1f] p-5">
-        <h3 className="font-semibold text-white mb-3">Monitor Configuration</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-slate-400 text-xs">
+      <section className="rounded-xl border border-[#e2e8f0] bg-[#ffffff] p-5">
+        <h3 className="font-semibold text-slate-900 mb-3">Monitor Configuration</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-slate-600 text-xs">
           <div>
             <span className="block text-slate-500 text-[11px]">Check Interval</span>
-            <span className="text-white font-medium">{device.interval} seconds</span>
+            <span className="text-slate-900 font-medium">{device.interval} seconds</span>
           </div>
           <div>
             <span className="block text-slate-500 text-[11px]">Request Timeout</span>
-            <span className="text-white font-medium">{device.timeoutMs || 10000} ms</span>
+            <span className="text-slate-900 font-medium">{device.timeoutMs || 10000} ms</span>
           </div>
           <div>
             <span className="block text-slate-500 text-[11px]">Baseline Latency</span>
-            <span className="text-white font-medium">{device.baselineLatency ? `${device.baselineLatency} ms` : 'Uncalibrated'}</span>
+            <span className="text-slate-900 font-medium">{device.baselineLatency ? `${device.baselineLatency} ms` : 'Uncalibrated'}</span>
           </div>
           <div>
             <span className="block text-slate-500 text-[11px]">State</span>
-            <span className={`font-medium ${device.enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+            <span className={`font-medium ${device.enabled ? 'text-emerald-700' : 'text-slate-600'}`}>
               {device.enabled ? 'Active' : 'Paused'}
             </span>
           </div>

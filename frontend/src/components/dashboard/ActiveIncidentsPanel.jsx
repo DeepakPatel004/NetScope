@@ -33,20 +33,20 @@ export default function ActiveIncidentsPanel({ incidents = [], devices = [], onS
     : [];
 
   return (
-    <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-5 flex flex-col justify-between">
+    <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-xl p-5 flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+        <h3 className="text-sm font-bold text-slate-900 tracking-wide flex items-center gap-2">
           Active Incidents
           {displayList.length > 0 && (
-            <span className="text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold">
+            <span className="text-[10px] bg-rose-500/20 text-rose-700 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold">
               {displayList.length} Active
             </span>
           )}
         </h3>
         <button
           onClick={() => navigate('/incidents')}
-          className="text-xs font-semibold text-[#5eead4] hover:text-teal-300 transition cursor-pointer"
+          className="text-xs font-semibold text-[#5eead4] hover:text-teal-700 transition cursor-pointer"
         >
           View all &rarr;
         </button>
@@ -61,15 +61,15 @@ export default function ActiveIncidentsPanel({ incidents = [], devices = [], onS
               <div
                 key={item.id}
                 onClick={() => onSelectIncident && onSelectIncident(item.raw || item)}
-                className="bg-[#101214] border border-[#2b3036] hover:border-slate-700 rounded-xl p-3 flex items-center justify-between cursor-pointer transition"
+                className="bg-[#f8fafc] border border-[#e2e8f0] hover:border-slate-300 rounded-xl p-3 flex items-center justify-between cursor-pointer transition"
               >
                 <div className="flex items-center gap-3 truncate">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border uppercase tracking-wider ${badgeStyle}`}>
                     {item.severity}
                   </span>
                   <div className="truncate">
-                    <p className="text-xs font-semibold text-white truncate">{item.title}</p>
-                    <p className="text-[11px] text-slate-400 font-sans truncate">{item.service}</p>
+                    <p className="text-xs font-semibold text-slate-900 truncate">{item.title}</p>
+                    <p className="text-[11px] text-slate-600 font-sans truncate">{item.service}</p>
                   </div>
                 </div>
                 <span className="text-[11px] text-slate-500 shrink-0 font-medium">{item.time}</span>
@@ -78,9 +78,9 @@ export default function ActiveIncidentsPanel({ incidents = [], devices = [], onS
           })}
         </div>
       ) : (
-        <div className="py-8 flex flex-col items-center justify-center text-center space-y-1.5 border border-dashed border-[#2b3036] rounded-xl my-1">
-          <CheckCircle2 size={24} className="text-emerald-400" />
-          <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wide">No open incidents</h4>
+        <div className="py-8 flex flex-col items-center justify-center text-center space-y-1.5 border border-dashed border-[#e2e8f0] rounded-xl my-1">
+          <CheckCircle2 size={24} className="text-emerald-700" />
+          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">No open incidents</h4>
           <p className="text-[11px] text-slate-500 max-w-xs">Recorded incidents will appear here.</p>
         </div>
       )}

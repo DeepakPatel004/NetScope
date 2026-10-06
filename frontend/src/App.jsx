@@ -39,7 +39,7 @@ function App() {
     <ErrorBoundary>
       <ToastProvider>
         <Router>
-          <Suspense fallback={<div role="status" className="p-8 text-sm text-slate-400">Loading page…</div>}>
+          <Suspense fallback={<div role="status" className="p-8 text-sm text-slate-600">Loading page…</div>}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />

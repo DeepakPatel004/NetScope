@@ -10,5 +10,5 @@ export default function KPICards({ devices = [], incidents = [], loading = false
     ['Open incidents', active, active ? 'Review incidents requiring attention' : 'No open incidents recorded', ShieldAlert],
     ['Average latency', latencies.length ? `${Math.round(latencies.reduce((sum, value) => sum + value, 0) / latencies.length)} ms` : '—', 'Latest successful checks', Clock],
   ];
-  return <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">{items.map(([label, value, hint, Icon]) => <div key={label} className="rounded-xl border border-[#2b3036] bg-[#181b1f] p-5"><div className="flex items-center justify-between text-slate-400"><p className="text-sm">{label}</p><Icon size={16} /></div><p className="text-3xl font-semibold tracking-tight text-white mt-5 tabular-nums">{loading ? '—' : value}</p><p className="text-xs text-slate-500 mt-2">{hint}</p></div>)}</div>;
+  return <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">{items.map(([label, value, hint, Icon]) => <div key={label} className="rounded-xl border border-[#e2e8f0] bg-[#ffffff] p-5"><div className="flex items-center justify-between text-slate-600"><p className="text-sm">{label}</p><Icon size={16} /></div><p className="text-3xl font-semibold tracking-tight text-slate-900 mt-5 tabular-nums">{loading ? '—' : value}</p><p className="text-xs text-slate-500 mt-2">{hint}</p></div>)}</div>;
 }

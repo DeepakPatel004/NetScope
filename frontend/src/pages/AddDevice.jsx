@@ -86,27 +86,27 @@ export default function AddDevice() {
     }
   };
 
-  const fieldClass = 'mt-2 w-full rounded-lg border border-[#2b3036] bg-[#101214] px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-teal-500';
+  const fieldClass = 'mt-2 w-full rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-teal-500';
 
   return (
-    <div className="max-w-2xl mx-auto p-5 sm:p-8 text-slate-100 space-y-7">
-      <Link to="/devices" className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition">
+    <div className="max-w-2xl mx-auto p-5 sm:p-8 text-slate-900 space-y-7">
+      <Link to="/devices" className="inline-flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 transition">
         <ArrowLeft size={14} /> Back to Monitors
       </Link>
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-white">{id ? 'Edit Monitor' : 'Create Endpoint Monitor'}</h1>
-        <p className="text-xs text-slate-400 mt-1.5">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{id ? 'Edit Monitor' : 'Create Endpoint Monitor'}</h1>
+        <p className="text-xs text-slate-600 mt-1.5">
           Configure external HTTP/HTTPS health checks executed from independent vantage probes.
         </p>
       </header>
 
-      {error && <p role="alert" className="text-xs text-rose-300 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30">{error}</p>}
+      {error && <p role="alert" className="text-xs text-rose-700 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30">{error}</p>}
 
       {loading ? (
-        <p role="status" className="text-xs text-slate-400">Loading monitor…</p>
+        <p role="status" className="text-xs text-slate-600">Loading monitor…</p>
       ) : (
-        <form onSubmit={save} className="rounded-xl border border-[#2b3036] bg-[#181b1f] p-6 space-y-5 text-xs">
-          <label className="block text-slate-300 font-medium">
+        <form onSubmit={save} className="rounded-xl border border-[#e2e8f0] bg-[#ffffff] p-6 space-y-5 text-xs">
+          <label className="block text-slate-700 font-medium">
             Monitor Name
             <input
               name="name"
@@ -119,7 +119,7 @@ export default function AddDevice() {
             />
           </label>
 
-          <label className="block text-slate-300 font-medium">
+          <label className="block text-slate-700 font-medium">
             Target Endpoint URL
             <input
               name="host"
@@ -135,7 +135,7 @@ export default function AddDevice() {
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label className="block text-slate-300 font-medium">
+            <label className="block text-slate-700 font-medium">
               Check Interval (seconds)
               <input
                 name="interval"
@@ -149,7 +149,7 @@ export default function AddDevice() {
               />
             </label>
 
-            <label className="block text-slate-300 font-medium">
+            <label className="block text-slate-700 font-medium">
               Timeout (milliseconds)
               <input
                 name="timeoutMs"
@@ -166,8 +166,8 @@ export default function AddDevice() {
 
           {/* Probe Selection */}
           <div>
-            <label className="block text-slate-300 font-medium mb-2 flex items-center gap-1.5">
-              <Radio size={14} className="text-teal-400" /> Assigned Monitoring Probes
+            <label className="block text-slate-700 font-medium mb-2 flex items-center gap-1.5">
+              <Radio size={14} className="text-teal-700" /> Assigned Monitoring Probes
             </label>
             <p className="text-[11px] text-slate-500 mb-3">
               Select specific probe locations, or leave unselected to monitor from all active fleet locations automatically.
@@ -185,8 +185,8 @@ export default function AddDevice() {
                       onClick={() => toggleProbe(p.id)}
                       className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition select-none ${
                         isChecked
-                          ? 'border-teal-500/50 bg-teal-500/10 text-white'
-                          : 'border-[#2b3036] bg-[#141618] text-slate-400 hover:text-slate-200'
+                          ? 'border-teal-500/50 bg-teal-500/10 text-slate-900'
+                          : 'border-[#e2e8f0] bg-[#f1f5f9] text-slate-600 hover:text-slate-800'
                       }`}
                     >
                       <input
@@ -196,8 +196,8 @@ export default function AddDevice() {
                         className="rounded accent-teal-500"
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-white truncate">{p.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                        <div className="font-semibold text-slate-900 truncate">{p.name}</div>
+                        <div className="text-[10px] text-slate-600 font-mono flex items-center gap-1">
                           <Globe size={10} /> {p.region}
                         </div>
                       </div>
@@ -208,7 +208,7 @@ export default function AddDevice() {
             )}
           </div>
 
-          <label className="flex items-center gap-3 text-slate-300 font-medium pt-2">
+          <label className="flex items-center gap-3 text-slate-700 font-medium pt-2">
             <input
               name="enabled"
               type="checkbox"
@@ -219,8 +219,8 @@ export default function AddDevice() {
             Enable active scheduling
           </label>
 
-          <div className="flex justify-end gap-3 border-t border-[#2b3036] pt-5">
-            <Link to="/devices" className="px-4 py-2 text-xs text-slate-400 hover:text-white">Cancel</Link>
+          <div className="flex justify-end gap-3 border-t border-[#e2e8f0] pt-5">
+            <Link to="/devices" className="px-4 py-2 text-xs text-slate-600 hover:text-slate-900">Cancel</Link>
             <button
               disabled={busy}
               className="rounded-lg bg-teal-600 hover:bg-teal-500 px-4 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-50 transition"

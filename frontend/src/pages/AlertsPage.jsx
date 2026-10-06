@@ -75,18 +75,18 @@ export default function AlertsPage() {
   };
 
   return (
-    <div className="p-8 md:p-10 bg-[#101214] min-h-screen text-slate-100 space-y-10 max-w-[1500px] mx-auto font-sans">
+    <div className="p-8 md:p-10 bg-[#f8fafc] min-h-screen text-slate-900 space-y-10 max-w-[1500px] mx-auto font-sans">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#2b3036] pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#e2e8f0] pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <Bell size={28} className="text-teal-400" />
-            <h1 className="text-2xl md:text-3xl font-semibold text-white font-sans tracking-tight">
+            <Bell size={28} className="text-teal-700" />
+            <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 font-sans tracking-tight">
               Notifications
             </h1>
           </div>
-          <p className="text-xs md:text-sm text-slate-400 mt-1">
+          <p className="text-xs md:text-sm text-slate-600 mt-1">
             Configure email delivery rules for high-confidence operational incidents and critical downtime events
           </p>
         </div>
@@ -95,30 +95,30 @@ export default function AlertsPage() {
       <form onSubmit={handleSave} className="space-y-8">
         
         {/* 1. NOTIFICATION CHANNELS */}
-        <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-6 md:p-8 space-y-6 shadow-sm">
-          <h2 className="text-base font-bold text-white uppercase font-sans tracking-wider flex items-center gap-2">
-            <Mail size={18} className="text-teal-400" /> NOTIFICATION CHANNELS
+        <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-xl p-6 md:p-8 space-y-6 shadow-sm">
+          <h2 className="text-base font-bold text-slate-900 uppercase font-sans tracking-wider flex items-center gap-2">
+            <Mail size={18} className="text-teal-700" /> NOTIFICATION CHANNELS
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-xs">
             <div className="space-y-2">
-              <label className="text-slate-400 font-bold uppercase text-[11px] block">Operator Email Address</label>
+              <label className="text-slate-600 font-bold uppercase text-[11px] block">Operator Email Address</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="sre-operator@company.com"
-                className="w-full bg-[#101214] border border-[#2b3036] text-slate-100 text-sm px-4 py-3 rounded-xl focus:outline-none focus:border-teal-500"
+                className="w-full bg-[#f8fafc] border border-[#e2e8f0] text-slate-900 text-sm px-4 py-3 rounded-xl focus:outline-none focus:border-teal-500"
               />
               <span className="text-[11px] text-slate-500 block">Recipient address for instant incident alert dispatches</span>
             </div>
 
-            <div className="p-4 bg-[#101214] border border-[#2b3036] rounded-xl flex items-center justify-between">
+            <div className="p-4 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl flex items-center justify-between">
               <div>
-                <span className="text-white font-bold text-sm block">Email Alerts Channel</span>
-                <span className="text-slate-400 text-xs">Active SMTP alert delivery engine</span>
+                <span className="text-slate-900 font-bold text-sm block">Email Alerts Channel</span>
+                <span className="text-slate-600 text-xs">Active SMTP alert delivery engine</span>
               </div>
-              <span className="px-3 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold rounded-lg text-xs">
+              <span className="px-3 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 font-bold rounded-lg text-xs">
                 ● ACTIVE
               </span>
             </div>
@@ -126,12 +126,12 @@ export default function AlertsPage() {
         </div>
 
         {/* 2. MINIMUM SEVERITY */}
-        <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-6 md:p-8 space-y-6 shadow-sm">
-          <h2 className="text-base font-bold text-white uppercase font-sans tracking-wider flex items-center gap-2">
-            <ShieldAlert size={18} className="text-amber-400" /> MINIMUM NOTIFICATION SEVERITY
+        <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-xl p-6 md:p-8 space-y-6 shadow-sm">
+          <h2 className="text-base font-bold text-slate-900 uppercase font-sans tracking-wider flex items-center gap-2">
+            <ShieldAlert size={18} className="text-amber-700" /> MINIMUM NOTIFICATION SEVERITY
           </h2>
 
-          <p className="text-xs text-slate-400 font-sans">
+          <p className="text-xs text-slate-600 font-sans">
             Select the minimum severity threshold required to trigger immediate email alerts:
           </p>
 
@@ -143,8 +143,8 @@ export default function AlertsPage() {
                 onClick={() => setMinSeverity(sev)}
                 className={`px-5 py-3 rounded-xl font-bold uppercase transition cursor-pointer border ${
                   minSeverity === sev
-                    ? 'bg-teal-600 border-teal-500 text-white shadow-sm '
-                    : 'bg-[#101214] border-[#2b3036] text-slate-400 hover:text-slate-200'
+                    ? 'bg-teal-600 border-teal-500 text-slate-900 shadow-sm '
+                    : 'bg-[#f8fafc] border-[#e2e8f0] text-slate-600 hover:text-slate-800'
                 }`}
               >
                 {sev === 'HIGH' ? '● HIGH (Recommended)' : sev}
@@ -154,11 +154,11 @@ export default function AlertsPage() {
         </div>
 
         {/* 3. EVENT SUBSCRIPTIONS */}
-        <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-6 md:p-8 space-y-6 shadow-sm font-sans text-xs">
-          <h2 className="text-base font-bold text-white uppercase tracking-wider">NOTIFY ME WHEN:</h2>
+        <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-xl p-6 md:p-8 space-y-6 shadow-sm font-sans text-xs">
+          <h2 className="text-base font-bold text-slate-900 uppercase tracking-wider">NOTIFY ME WHEN:</h2>
 
           <div className="space-y-4">
-            <label className="flex items-center gap-3 p-4 bg-[#101214] border border-[#2b3036] rounded-xl cursor-pointer hover:border-slate-700 transition">
+            <label className="flex items-center gap-3 p-4 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl cursor-pointer hover:border-slate-300 transition">
               <input
                 type="checkbox"
                 checked={notifySerious}
@@ -166,12 +166,12 @@ export default function AlertsPage() {
                 className="w-4 h-4 rounded text-teal-600 focus:ring-0 cursor-pointer"
               />
               <div>
-                <span className="text-white font-bold text-sm block">☑ Serious Incident Created</span>
-                <span className="text-slate-400 text-xs">Correlated multi-signal operational problem detected</span>
+                <span className="text-slate-900 font-bold text-sm block">☑ Serious Incident Created</span>
+                <span className="text-slate-600 text-xs">Correlated multi-signal operational problem detected</span>
               </div>
             </label>
 
-            <label className="flex items-center gap-3 p-4 bg-[#101214] border border-[#2b3036] rounded-xl cursor-pointer hover:border-slate-700 transition">
+            <label className="flex items-center gap-3 p-4 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl cursor-pointer hover:border-slate-300 transition">
               <input
                 type="checkbox"
                 checked={notifyCritical}
@@ -179,8 +179,8 @@ export default function AlertsPage() {
                 className="w-4 h-4 rounded text-teal-600 focus:ring-0 cursor-pointer"
               />
               <div>
-                <span className="text-white font-bold text-sm block">☑ Critical Downtime Outage</span>
-                <span className="text-slate-400 text-xs">Target endpoint unreachable or service down</span>
+                <span className="text-slate-900 font-bold text-sm block">☑ Critical Downtime Outage</span>
+                <span className="text-slate-600 text-xs">Target endpoint unreachable or service down</span>
               </div>
             </label>
           </div>
@@ -210,20 +210,20 @@ export default function AlertsPage() {
       </form>
 
       {/* 4. NOTIFICATION HISTORY TABLE */}
-      <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-6 md:p-8 space-y-6 shadow-sm">
-        <h2 className="text-base font-bold text-white uppercase font-sans tracking-wider">NOTIFICATION HISTORY LOG</h2>
+      <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-xl p-6 md:p-8 space-y-6 shadow-sm">
+        <h2 className="text-base font-bold text-slate-900 uppercase font-sans tracking-wider">NOTIFICATION HISTORY LOG</h2>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse font-sans text-xs">
             <thead>
-              <tr className="border-b border-[#2b3036] text-slate-400 font-sans text-[11px] uppercase tracking-wider">
+              <tr className="border-b border-[#e2e8f0] text-slate-600 font-sans text-[11px] uppercase tracking-wider">
                 <th className="py-4 px-4 font-bold">Time</th>
                 <th className="py-4 px-4 font-bold">Severity</th>
                 <th className="py-4 px-4 font-bold">Event Message</th>
                 <th className="py-4 px-4 font-bold text-right">Delivery Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2b3036]/60 text-slate-200 font-sans">
+            <tbody className="divide-y divide-[#e2e8f0]/60 text-slate-800 font-sans">
               {notifications.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-10 text-center text-slate-500 font-sans">
@@ -233,10 +233,10 @@ export default function AlertsPage() {
               ) : (
                 notifications.map((n) => (
                   <tr key={n.id} style={{ height: '56px' }}>
-                    <td className="py-4 px-4 text-slate-400">{new Date(n.sentAt).toLocaleString()}</td>
-                    <td className="py-4 px-4 font-bold text-amber-400">{n.severity || 'HIGH'}</td>
-                    <td className="py-4 px-4 text-white font-bold">{n.message || n.title}</td>
-                    <td className="py-4 px-4 text-right text-emerald-400 font-bold">Sent (Email)</td>
+                    <td className="py-4 px-4 text-slate-600">{new Date(n.sentAt).toLocaleString()}</td>
+                    <td className="py-4 px-4 font-bold text-amber-700">{n.severity || 'HIGH'}</td>
+                    <td className="py-4 px-4 text-slate-900 font-bold">{n.message || n.title}</td>
+                    <td className="py-4 px-4 text-right text-emerald-700 font-bold">Sent (Email)</td>
                   </tr>
                 ))
               )}

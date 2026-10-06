@@ -18,6 +18,7 @@ const normalizeError = (err) => {
   if (Array.isArray(err.response?.data?.errors)) {
     return err.response.data.errors.map((item) => item.message || item).join(', ');
   }
+  if (!err.response && err.code === 'ERR_NETWORK') return 'Cannot reach the NetScope API. Please check that the backend is running and try again.';
   if (err.message) return err.message;
   return 'An unexpected error occurred.';
 };

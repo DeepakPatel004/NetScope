@@ -16,8 +16,8 @@ import { Globe, Play, Activity, Sparkles, TrendingUp, AlertTriangle } from 'luci
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#181b1f] border border-[#334155] p-2.5 rounded-xl shadow-sm text-xs text-white font-sans">
-        <p className="font-semibold text-slate-400 mb-1">{label}</p>
+      <div className="bg-[#ffffff] border border-[#cbd5e1] p-2.5 rounded-xl shadow-sm text-xs text-slate-900 font-sans">
+        <p className="font-semibold text-slate-600 mb-1">{label}</p>
         {payload.map((entry, idx) => (
           <p key={idx} style={{ color: entry.color }} className="font-bold text-xs">
             {entry.name}: {entry.value} {entry.name.includes('Errors') || entry.name.includes('Availability') ? '%' : 'ms'}
@@ -53,11 +53,11 @@ export default function DevicePerformance() {
     <div className="space-y-6 font-sans text-xs">
 
       {/* 1. SERVICE PERFORMANCE CHARTS */}
-      <div className="bg-[#181b1f] border border-[#2b3036] rounded-xl p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-[#2b3036] pb-3">
+      <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-xl p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-3">
           <div className="flex items-center gap-2">
-            <Globe size={18} className="text-blue-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">SERVICE PERFORMANCE TRENDS</h2>
+            <Globe size={18} className="text-blue-700" />
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">SERVICE PERFORMANCE TRENDS</h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -67,7 +67,7 @@ export default function DevicePerformance() {
                   key={tab}
                   onClick={() => setMetricTab(tab)}
                   className={`px-3 py-1 rounded-lg font-bold uppercase transition cursor-pointer ${
-                    metricTab === tab ? 'bg-teal-600 text-white' : 'bg-[#101214] text-slate-400 border border-[#2b3036]'
+                    metricTab === tab ? 'bg-teal-600 text-slate-900' : 'bg-[#f8fafc] text-slate-600 border border-[#e2e8f0]'
                   }`}
                 >
                   [{tab}]
@@ -88,33 +88,33 @@ export default function DevicePerformance() {
 
         {/* Phase Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-[#101214] border border-[#2b3036] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Round-Trip Latency</span>
-            <span className="text-xl font-semibold text-white mt-1 block">{latestLatency} ms</span>
+          <div className="bg-[#f8fafc] border border-[#e2e8f0] p-3.5 rounded-xl">
+            <span className="text-slate-600 block text-[10px] uppercase font-bold">Round-Trip Latency</span>
+            <span className="text-xl font-semibold text-slate-900 mt-1 block">{latestLatency} ms</span>
             <span className="text-[10px] text-slate-500">Target response time</span>
           </div>
 
-          <div className="bg-[#101214] border border-[#2b3036] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">DNS Lookup</span>
-            <span className="text-xl font-semibold text-teal-400 mt-1 block">{latestLog.dnsTime ?? '—'} ms</span>
+          <div className="bg-[#f8fafc] border border-[#e2e8f0] p-3.5 rounded-xl">
+            <span className="text-slate-600 block text-[10px] uppercase font-bold">DNS Lookup</span>
+            <span className="text-xl font-semibold text-teal-700 mt-1 block">{latestLog.dnsTime ?? '—'} ms</span>
             <span className="text-[10px] text-slate-500">Domain resolution</span>
           </div>
 
-          <div className="bg-[#101214] border border-[#2b3036] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">TLS Handshake</span>
-            <span className="text-xl font-semibold text-cyan-400 mt-1 block">{latestLog.tlsTime ?? '—'} ms</span>
+          <div className="bg-[#f8fafc] border border-[#e2e8f0] p-3.5 rounded-xl">
+            <span className="text-slate-600 block text-[10px] uppercase font-bold">TLS Handshake</span>
+            <span className="text-xl font-semibold text-cyan-700 mt-1 block">{latestLog.tlsTime ?? '—'} ms</span>
             <span className="text-[10px] text-slate-500">Secure socket setup</span>
           </div>
 
-          <div className="bg-[#101214] border border-[#2b3036] p-3.5 rounded-xl">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Time to First Byte</span>
-            <span className="text-xl font-semibold text-emerald-400 mt-1 block">{latestLog.ttfbTime ?? '—'} ms</span>
+          <div className="bg-[#f8fafc] border border-[#e2e8f0] p-3.5 rounded-xl">
+            <span className="text-slate-600 block text-[10px] uppercase font-bold">Time to First Byte</span>
+            <span className="text-xl font-semibold text-emerald-700 mt-1 block">{latestLog.ttfbTime ?? '—'} ms</span>
             <span className="text-[10px] text-slate-500">TTFB server response</span>
           </div>
         </div>
 
         {/* Primary Performance Area Chart */}
-        <div className="h-60 w-full bg-[#101214] border border-[#2b3036] rounded-xl p-3">
+        <div className="h-60 w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3">
           {perfData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={perfData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -124,9 +124,9 @@ export default function DevicePerformance() {
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2b3036" vertical={false} />
-                <XAxis dataKey="time" stroke="#8b949e" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8b949e" fontSize={10} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"

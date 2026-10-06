@@ -34,21 +34,21 @@ export function ToastProvider({ children }) {
             key={item.id}
             className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl border backdrop-blur-xl shadow-2xl transition-colors duration-150 animate-slide-in ${
               item.type === 'success'
-                ? 'bg-slate-900/90 border-emerald-500/30 text-emerald-300 '
+                ? 'bg-white/90 border-emerald-500/30 text-emerald-700 '
                 : item.type === 'error'
-                ? 'bg-slate-900/90 border-rose-500/30 text-rose-300 '
-                : 'bg-slate-900/90 border-teal-500/30 text-teal-300 '
+                ? 'bg-white/90 border-rose-500/30 text-rose-700 '
+                : 'bg-white/90 border-teal-500/30 text-teal-700 '
             }`}
           >
             <div className="flex items-center gap-3">
-              {item.type === 'success' && <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />}
-              {item.type === 'error' && <AlertTriangle size={18} className="text-rose-400 shrink-0" />}
-              {item.type === 'info' && <Info size={18} className="text-teal-400 shrink-0" />}
-              <span className="text-xs font-sans font-medium text-slate-100 leading-snug">{item.message}</span>
+              {item.type === 'success' && <CheckCircle2 size={18} className="text-emerald-700 shrink-0" />}
+              {item.type === 'error' && <AlertTriangle size={18} className="text-rose-700 shrink-0" />}
+              {item.type === 'info' && <Info size={18} className="text-teal-700 shrink-0" />}
+              <span className="text-xs font-sans font-medium text-slate-900 leading-snug">{item.message}</span>
             </div>
             <button
               onClick={() => removeToast(item.id)}
-              className="text-slate-500 hover:text-slate-200 p-1 rounded-lg transition-colors cursor-pointer"
+              className="text-slate-500 hover:text-slate-800 p-1 rounded-lg transition-colors cursor-pointer"
             >
               <X size={14} />
             </button>

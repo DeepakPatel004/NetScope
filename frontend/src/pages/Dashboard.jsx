@@ -37,9 +37,9 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [fetchData, refreshInterval]);
 
-  return <div className="max-w-[1440px] mx-auto p-5 sm:p-8 space-y-7 text-slate-100">
+  return <div className="max-w-[1440px] mx-auto p-5 sm:p-8 space-y-7 text-slate-900">
     <Header onRefresh={fetchData} loading={loading} refreshInterval={refreshInterval} setRefreshInterval={setRefreshInterval} lastUpdated={lastUpdated} />
-    {error && <p role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-300">{error}</p>}
+    {error && <p role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-700">{error}</p>}
     <KPICards devices={devices} incidents={incidents} loading={!lastUpdated} />
     <section><h2 className="text-base font-semibold mb-4">Devices</h2>{loading && !lastUpdated ? <p className="text-sm text-slate-500">Loading devices…</p> : <ResourceHealthTable devices={devices} incidents={incidents} />}</section>
     <div className="grid grid-cols-1 xl:grid-cols-5 gap-5"><div className="xl:col-span-3"><LatencyOverviewChart devices={devices} refreshKey={lastUpdated} /></div><section className="xl:col-span-2"><ActiveIncidentsPanel incidents={incidents} devices={devices} onSelectIncident={setSelectedIncident} /></section></div>
