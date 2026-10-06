@@ -28,39 +28,6 @@ export const statisticalAnomalyService = {
     };
   },
 
-  evaluateServerMetrics(latestMetric) {
-    if (!latestMetric) return { isAnomaly: false, reasons: [], maxScore: 0.0 };
-
-    const reasons = [];
-    let score = 0.0;
-
-    if (latestMetric.cpuPercent && latestMetric.cpuPercent >= 85.0) {
-      reasons.push(`CPU usage elevated to ${latestMetric.cpuPercent.toFixed(1)}% (Threshold: 85%)`);
-      score = Math.max(score, latestMetric.cpuPercent >= 95.0 ? 0.90 : 0.70);
-    }
-
-    if (latestMetric.ramPercent && latestMetric.ramPercent >= 90.0) {
-      reasons.push(`RAM usage reached ${latestMetric.ramPercent.toFixed(1)}% (Threshold: 90%)`);
-      score = Math.max(score, 0.75);
-    }
-
-    if (latestMetric.diskPercent && latestMetric.diskPercent >= 90.0) {
-      reasons.push(`Disk space critical at ${latestMetric.diskPercent.toFixed(1)}% (Threshold: 90%)`);
-      score = Math.max(score, 0.85);
-    }
-
-    if (latestMetric.loadAvg && latestMetric.loadAvg >= 4.0) {
-      reasons.push(`System load average spiked to ${latestMetric.loadAvg.toFixed(2)}`);
-      score = Math.max(score, 0.65);
-    }
-
-    return {
-      isAnomaly: reasons.length > 0,
-      reasons,
-      maxScore: score,
-    };
-  },
-
   evaluateErrorRate(historyLogs = []) {
     if (!historyLogs || historyLogs.length < 5) {
       return { isAnomaly: false, errorRate: 0.0 };
@@ -78,26 +45,32 @@ export const statisticalAnomalyService = {
     };
   },
 
-  detectStatisticalAnomaly(device, recentLogs = [], recentAgentMetric = null) {
-    const latestLog = recentLogs[0];
+  detectStatisticalAnomaly(device, recentLogs = []) {
+    // Monitoring histories are chronological: the newest sample is last.
+    const latestLog = recentLogs.at(-1);
     const currentLatency = latestLog?.latency || 0;
 
-    const latencyEval = this.evaluateLatency(currentLatency, recentLogs.slice(1));
-    const serverEval = this.evaluateServerMetrics(recentAgentMetric);
-    const errorEval = this.evaluateErrorRate(recentLogs);
+    const latencyEval = this.evaluateLatency(currentLatency, recentLogs.slice(0, -1));
+    const errorEval = this.evaluateErrorRate(recentLogs.slice(-5));
 
     let anomalyScore = 0.0;
     const reasons = [];
+
+    let consecutiveFailures = 0;
+    for (const log of [...recentLogs].reverse()) {
+      if (log.status !== 'DOWN' && !(log.responseCode >= 400)) break;
+      consecutiveFailures++;
+    }
+    if (consecutiveFailures) {
+      anomalyScore = consecutiveFailures >= 3 ? 0.9 : consecutiveFailures >= 2 ? 0.7 : 0.5;
+      reasons.push(`${consecutiveFailures} consecutive failed health checks`);
+    }
 
     if (latencyEval.isAnomaly) {
       anomalyScore = Math.max(anomalyScore, Math.min(0.95, 0.40 + latencyEval.zScore * 0.12));
       reasons.push(`Latency spiked to ${currentLatency}ms (Baseline: ${latencyEval.mean}ms, Z-Score: ${latencyEval.zScore.toFixed(1)})`);
     }
 
-    if (serverEval.isAnomaly) {
-      anomalyScore = Math.max(anomalyScore, serverEval.maxScore);
-      reasons.push(...serverEval.reasons);
-    }
 
     if (errorEval.isAnomaly) {
       anomalyScore = Math.max(anomalyScore, 0.50 + errorEval.errorRate * 0.40);
@@ -125,9 +98,7 @@ export const statisticalAnomalyService = {
         meanLatency: latencyEval.mean,
         zScore: latencyEval.zScore,
         errorRate: errorEval.errorRate,
-        cpuPercent: recentAgentMetric?.cpuPercent || null,
-        ramPercent: recentAgentMetric?.ramPercent || null,
-        diskPercent: recentAgentMetric?.diskPercent || null,
+        consecutiveFailures,
       },
     };
   },

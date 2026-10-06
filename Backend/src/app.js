@@ -10,8 +10,11 @@ import reportRoutes from './modules/report/report.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import aiRoutes from './modules/ai/ai.routes.js';
 import agentRoutes from './modules/agent/agent.routes.js';
+import probeRoutes from './modules/probe/probe.routes.js';
 import notificationRoutes from './modules/notification/notification.routes.js';
 import recoveryRoutes from './modules/recovery/recovery.routes.js';
+import prisma from './config/database.js';
+import { requireAuth } from './middleware/auth.middleware.js';
 
 const app = express();
 
@@ -37,8 +40,21 @@ app.use('/api/v3/analytics', analyticsRoutes);
 app.use('/api/v3/auth', authRoutes);
 app.use('/api/v3/ai', aiRoutes);
 app.use('/api/v3/agent', agentRoutes);
+app.use('/api/v3/probes', probeRoutes);
 app.use('/api/v3/notifications', notificationRoutes);
 app.use('/api/v3/recovery', recoveryRoutes);
+
+app.get('/api/v3/logs', requireAuth, async (req, res, next) => {
+  try {
+    const include = { user: { select: { username: true, fullName: true } } };
+    const [audit, activity] = await Promise.all([
+      prisma.auditLog.findMany({ where: { userId: req.user.id }, orderBy: { createdAt: 'desc' }, take: 100, include }),
+      prisma.activityLog.findMany({ where: { userId: req.user.id }, orderBy: { createdAt: 'desc' }, take: 100, include }),
+    ]);
+    const data = [...audit, ...activity.map(log => ({ ...log, entityType: log.entity }))].sort((a, b) => b.createdAt - a.createdAt).slice(0, 100);
+    res.json({ success: true, data });
+  } catch (error) { next(error); }
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

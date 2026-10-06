@@ -40,7 +40,7 @@ class IncidentAnalysisResponse(BaseModel):
     severity: str
     risk_level: Optional[str] = "MEDIUM"
     business_impact: Optional[str] = "Service response degradation impacting target latency"
-    recommended_action: Optional[str] = "restart_container"
+    recommended_action: Optional[str] = "inspect_telemetry"
     observations: List[str] = Field(default_factory=list)
     possible_causes: List[str] = Field(default_factory=list)
     recommended_investigations: List[str] = Field(default_factory=list)

@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from typing import List, Dict, Any, Tuple
 from sklearn.ensemble import IsolationForest
 from schemas import MetricLog, AnomalyDetectionResponse
@@ -99,20 +98,23 @@ class IsolationForestAnomalyDetector:
         latest_features = raw_dicts[-1]
         
         # ML Inference using Isolation Forest
-        if len(history) >= 5:
+        if len(history) >= 6:
             clf = IsolationForest(
                 n_estimators=self.n_estimators,
                 contamination=self.contamination,
                 random_state=42
             )
-            clf.fit(X)
+            # Fit only previous samples: the point being assessed is not training data.
+            clf.fit(X[:-1])
             
             # decision_function output: positive for normal, negative for anomaly
             decision_score = clf.decision_function([X[-1]])[0]
             
             # Normalize decision score to [0.0, 1.0] where 1.0 is maximum anomaly
             # Decision function typically ranges between -0.5 and +0.5
-            raw_anomaly_score = float(0.5 - decision_score)
+            # A non-negative decision is normal. The old 0.5 offset made
+            # identical healthy samples exceed the anomaly threshold.
+            raw_anomaly_score = float(max(0.0, -decision_score) * 4.0)
             anomaly_score = float(np.clip(raw_anomaly_score, 0.0, 1.0))
         else:
             # Rule-based bootstrap score for initial data points (< 5 checks)
@@ -125,9 +127,10 @@ class IsolationForestAnomalyDetector:
 
         # Threshold rules & Anomaly Determination
         consecutive_failures = int(latest_features["consecutive_failures"])
-        error_rate = latest_features["error_rate"]
+        error_rate = sum(row["is_error"] for row in raw_dicts[-5:]) / len(raw_dicts[-5:])
         latest_latency = latest_features["latency"]
-        mean_latency = baseline_stats.get("mean_latency", latest_latency)
+        prior_latencies = [row["latency"] for row in raw_dicts[:-1] if not row["is_error"]]
+        mean_latency = float(np.mean(prior_latencies)) if prior_latencies else latest_latency
         
         is_anomaly = False
         severity = "LOW"
@@ -136,13 +139,27 @@ class IsolationForestAnomalyDetector:
         # High latency deviation check
         latency_spike_ratio = (latest_latency / (mean_latency + 1e-5)) if mean_latency > 0 else 1.0
         
-        if consecutive_failures >= 3 or error_rate > 0.6 or anomaly_score > 0.75:
+        # Explicit signals still detect sustained failures when the model has
+        # learned an outage as its baseline or there are too few samples.
+        if consecutive_failures >= 3 or (latest_features["is_error"] and error_rate > 0.6 and len(history) >= 3):
+            anomaly_score = max(anomaly_score, 0.9)
+        elif consecutive_failures >= 2:
+            anomaly_score = max(anomaly_score, 0.7)
+        elif latest_features["is_error"] or latest_latency > 1000 or latency_spike_ratio > 2.5:
+            anomaly_score = max(anomaly_score, 0.5)
+
+        # Lower latency after an outage is recovery, not a new failure.
+        adverse_signal = latest_features["is_error"] or latest_latency > 1000 or latency_spike_ratio > 1.5
+        if not adverse_signal:
+            anomaly_score = 0.0
+
+        if anomaly_score >= 0.75:
             is_anomaly = True
             severity = "CRITICAL"
-        elif consecutive_failures >= 2 or error_rate > 0.3 or anomaly_score > 0.60:
+        elif anomaly_score >= 0.60:
             is_anomaly = True
             severity = "HIGH"
-        elif anomaly_score > 0.45 or latency_spike_ratio > 2.5:
+        elif anomaly_score >= 0.40:
             is_anomaly = True
             severity = "MEDIUM"
         elif anomaly_score > 0.30:

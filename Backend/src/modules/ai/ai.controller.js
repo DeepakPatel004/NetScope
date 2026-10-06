@@ -58,7 +58,7 @@ export const aiController = {
 
   async getIncidents(req, res, next) {
     try {
-      const incidents = await aiService.getIncidents(req.user?.id);
+      const incidents = await aiService.getIncidents(req.user?.id, req.query.deviceId || null);
       return res.status(200).json({ success: true, data: incidents });
     } catch (error) {
       next(error);

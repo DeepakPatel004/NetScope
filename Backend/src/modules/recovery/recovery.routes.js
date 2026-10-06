@@ -1,21 +1,7 @@
 import { Router } from 'express';
-import { recoveryController } from './recovery.controller.js';
-import { authenticate } from '../../middleware/auth.middleware.js';
-
 const router = Router();
-
-// Agent execution result route (authenticated via X-NetScope-Agent-Key header)
-router.post('/result', recoveryController.processResult);
-
-// User-authenticated recovery routes
-router.use(authenticate);
-
-router.post('/recommend', recoveryController.createRequest);
-router.post('/requests', recoveryController.createRequest);
-router.post('/:id/approve', recoveryController.approveAction);
-router.post('/:id/verify', recoveryController.verifyAction);
-
-router.get('/device/:deviceId', recoveryController.getDeviceActions);
-router.get('/audit-logs', recoveryController.getAuditLogs);
-
+// Explicit retirement response for older consoles and host agents.
+router.use((_req, res) => {
+  res.status(410).json({ success: false, message: 'Server and container recovery actions have been removed. NetScope provides monitoring and investigation only.' });
+});
 export default router;

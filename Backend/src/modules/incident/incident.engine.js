@@ -11,7 +11,7 @@ export const incidentEngine = {
    * Process a telemetry check sample through the Smart Incident Engine state machine:
    * TELEMETRY ➔ ANOMALY ➔ PERSISTENT THRESHOLD ➔ INCIDENT ➔ DEBOUNCED RESOLUTION
    */
-  async processTelemetrySample(device, checkResult, statAnomaly, aiAnomaly, latestAgentMetric) {
+  async processTelemetrySample(device, checkResult, statAnomaly, aiAnomaly) {
     const deviceId = device.id;
     const currentStatus = checkResult.status;
 
@@ -23,7 +23,7 @@ export const incidentEngine = {
     // 1. Evaluate Anomaly Score
     const combinedScore = Math.max(statAnomaly?.anomalyScore || 0.0, aiAnomaly?.anomaly_score || 0.0);
     const combinedSeverity = combinedScore >= 0.75 ? 'CRITICAL' : combinedScore >= 0.60 ? 'HIGH' : combinedScore >= 0.40 ? 'MEDIUM' : 'LOW';
-    const isAnomalyDetected = statAnomaly?.isAnomaly || aiAnomaly?.is_anomaly || combinedScore >= 0.40;
+    const isAnomalyDetected = Boolean(statAnomaly?.isAnomaly || aiAnomaly?.is_anomaly);
 
     // Record Anomaly in Postgres without immediately sending email or creating incident
     let anomalyRecord = null;
@@ -33,7 +33,7 @@ export const incidentEngine = {
           deviceId,
           anomalyScore: combinedScore,
           severity: combinedSeverity,
-          detectionReason: statAnomaly?.detectionReason || aiAnomaly?.detection_reason || 'Telemetry anomaly recorded',
+          detectionReason: (statAnomaly?.isAnomaly ? statAnomaly.detectionReason : aiAnomaly?.detection_reason) || 'Telemetry anomaly recorded',
           metrics: {
             ...statAnomaly?.metrics,
             aiEvaluated: aiAnomaly?.metrics_evaluated || {},
@@ -55,13 +55,13 @@ export const incidentEngine = {
       await redisConnection.set(keyDown, 0);
     }
 
-    if (['HIGH', 'CRITICAL'].includes(combinedSeverity)) {
+    if (isAnomalyDetected && ['HIGH', 'CRITICAL'].includes(combinedSeverity)) {
       consecutiveAnomaly = await redisConnection.incr(keyAnomaly);
     } else {
       await redisConnection.set(keyAnomaly, 0);
     }
 
-    if (currentStatus === 'UP' && combinedScore < 0.40) {
+    if (currentStatus === 'UP' && !isAnomalyDetected) {
       consecutiveHealthy = await redisConnection.incr(keyHealthy);
     } else {
       await redisConnection.set(keyHealthy, 0);
@@ -82,15 +82,15 @@ export const incidentEngine = {
     });
 
     // 4. Evaluate Incident Creation Criteria
-    const isCorrelatedSpike = (latestAgentMetric?.cpuPercent >= 90) && (checkResult.latency >= 800);
-    const requiresIncident = (consecutiveDown >= DEBOUNCE_THRESHOLD) || (consecutiveAnomaly >= DEBOUNCE_THRESHOLD) || isCorrelatedSpike;
+    const requiresIncident = (consecutiveDown >= DEBOUNCE_THRESHOLD) || (consecutiveAnomaly >= DEBOUNCE_THRESHOLD);
 
     if (requiresIncident) {
       // LLM Token & Cost Protection: Only invoke LLM API on NEW incident creation or when severity escalates!
-      const isSeverityEscalation = activeIncident && combinedSeverity !== activeIncident.priority;
+      const ranks = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
+      const isSeverityEscalation = activeIncident && ranks[combinedSeverity] > ranks[activeIncident.priority];
       const shouldInvokeLLM = !activeIncident || isSeverityEscalation;
 
-      let priorityRes = { priority: combinedSeverity, priority_score: 5.0, priority_reason: 'Consecutive threshold met' };
+      let priorityRes = { priority: activeIncident?.priority || (consecutiveDown >= 3 ? 'CRITICAL' : combinedSeverity), priority_score: activeIncident?.priorityScore ?? 5.0, priority_reason: activeIncident?.priorityReason || 'Consecutive threshold met' };
       let llmAnalysis = null;
 
       if (shouldInvokeLLM) {
@@ -106,7 +106,7 @@ export const incidentEngine = {
 
         try {
           priorityRes = await aiClient.prioritizeAlert(
-            combinedSeverity,
+            consecutiveDown >= 3 ? 'CRITICAL' : combinedSeverity,
             history.length,
             downCount,
             errorRate,
@@ -120,7 +120,7 @@ export const incidentEngine = {
             combinedScore,
             priorityRes.priority,
             statAnomaly?.detectionReason || checkResult.message,
-            history.slice(-10),
+            history.slice(0, 10).reverse(),
             statAnomaly?.metrics
           );
         } catch (err) {
@@ -139,17 +139,7 @@ export const incidentEngine = {
         }
       }
 
-      // Grounded SRE Recovery Recommendation Safety Rule
-      // Do NOT recommend restart_service merely for high CPU if service is healthy (HTTP 200)
-      if (latestAgentMetric?.cpuPercent >= 85 && checkResult.status === 'UP' && (!checkResult.responseCode || checkResult.responseCode < 400)) {
-        if (llmAnalysis && Array.isArray(llmAnalysis.recommended_investigations)) {
-          llmAnalysis.recommended_investigations = llmAnalysis.recommended_investigations.map((rec) =>
-            rec.includes('restart_service') ? 'inspect_processes: Inspect CPU-consuming processes (top/htop)' : rec
-          );
-        }
-      }
-
-      const incidentType = currentStatus === 'DOWN' ? 'DOWNTIME' : isCorrelatedSpike ? 'SERVICE_DEGRADATION' : 'ANOMALY';
+      const incidentType = currentStatus === 'DOWN' ? 'DOWNTIME' : 'ANOMALY';
 
       if (activeIncident) {
         // DEDUPLICATION: Update existing incident instead of creating duplicates!
@@ -166,7 +156,6 @@ export const incidentEngine = {
               consecutiveDown,
               consecutiveAnomaly,
               latestLatency: checkResult.latency,
-              cpuPercent: latestAgentMetric?.cpuPercent || null,
             },
           },
         });
@@ -190,7 +179,6 @@ export const incidentEngine = {
               consecutiveDown,
               consecutiveAnomaly,
               latestLatency: checkResult.latency,
-              cpuPercent: latestAgentMetric?.cpuPercent || null,
             },
             confidence: llmAnalysis?.confidence || 0.85,
             anomalyId: anomalyRecord?.id || null,

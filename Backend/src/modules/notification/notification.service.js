@@ -81,7 +81,7 @@ export const notificationService = {
     // Filter by minSeverity
     const minRank = severityRanks[prefs.minSeverity] || 2;
     const currentRank = severityRanks[severity] || 2;
-    if (currentRank < minRank && !force) {
+    if (currentRank < minRank && !force && type !== 'RECOVERY') {
       console.log(`[NotificationService] Suppressed ${type} for user ${userId} (Severity ${severity} below min ${prefs.minSeverity})`);
       return { status: 'suppressed', reason: 'below_min_severity' };
     }
@@ -177,21 +177,21 @@ export const notificationService = {
                 <ul style="margin: 0; padding-left: 20px; color: #94A3B8; line-height: 1.6;">
                   <li>Event Type: <strong style="color: #E2E8F0;">${type}</strong></li>
                   <li>Incident ID: <strong style="color: #818CF8; font-family: monospace;">${incidentId || 'SYS-EVENT'}</strong></li>
-                  <li>Impact: <strong style="color: #F87171;">Elevated host metric pressure or service endpoint unresponsiveness</strong></li>
-                  <li>Governance: <strong style="color: #34D399;">Human-Approved Auto-Remediation Ready</strong></li>
+                  <li>Impact: <strong style="color: #F87171;">Endpoint degradation or service unresponsiveness</strong></li>
+                  <li>Governance: <strong style="color: #34D399;">Read-only incident investigation</strong></li>
                 </ul>
               </div>
 
               <!-- Primary CTA Button -->
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${resolveUrl}" style="display: inline-block; background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: #FFFFFF; font-weight: 800; font-size: 15px; padding: 16px 36px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); text-transform: uppercase; tracking-wider: 0.05em;">
-                  ⚡ CLICK HERE TO RESOLVE INCIDENT &rarr;
+                  ⚡ VIEW INCIDENT DETAILS &rarr;
                 </a>
               </div>
 
               <!-- Footer -->
               <div style="border-top: 1px solid #1E293B; padding-top: 20px; font-size: 12px; color: #64748B; text-align: center; font-family: monospace;">
-                Clicking the button above redirects directly to the <strong>Incidents Remediation Portal</strong> to inspect AI evidence & approve recovery playbooks.
+                Clicking the button above redirects directly to the <strong>Incident Investigation Console</strong> to inspect telemetry evidence and diagnostic guidance.
               </div>
 
             </div>

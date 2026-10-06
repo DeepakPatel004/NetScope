@@ -1,88 +1,150 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
-const MOCK_USER_ID = "11111111-1111-1111-1111-111111111111";
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token.trim()).digest('hex');
+}
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('🌱 Starting NetScope deterministic database seed...');
 
-  // 1. Clear existing data to prevent duplicates (Optional but recommended)
-  await prisma.healthLog.deleteMany({});
-  await prisma.device.deleteMany({});
-  console.log('🧹 Cleared old database records.');
+  // 1. Seed Default Operator & Demo Users
+  const passwordHash = await bcrypt.hash('AdminPass123!', 10);
 
-  // 2. Define realistic demo devices using resolvable local hosts
-  const demoDevices = [
-    { name: 'Primary API Server', host: 'example.com', type: 'API', interval: 60 },
-    { name: 'Customer Payment Gateway', host: 'example.org', type: 'API', interval: 30 },
-    { name: 'Marketing Website', host: 'example.net', type: 'WEBSITE', interval: 300 },
-    { name: 'Europe Database Replica', host: '127.0.0.1', type: 'IP', interval: 60 },
-    { name: 'Background Worker', host: 'localhost', type: 'IP', interval: 60 },
-  ];
-
-  // 3. Insert devices and generate historical logs
-  // Ensure a demo user exists for seeded devices
-  await prisma.user.upsert({
-    where: { id: MOCK_USER_ID },
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@netscope.internal' },
     update: {},
     create: {
-      id: MOCK_USER_ID,
-      username: 'demo',
-      email: 'demo@netscope.local',
-      passwordHash: '',
-      fullName: 'Demo User',
-      role: 'USER'
-    }
+      username: 'admin',
+      email: 'admin@netscope.internal',
+      passwordHash,
+      fullName: 'Operator Administrator',
+      role: 'ADMIN',
+    },
   });
 
-  for (const dev of demoDevices) {
-    const device = await prisma.device.create({
-      data: {
-        userId: MOCK_USER_ID,
-        name: dev.name,
-        host: dev.host,
-        type: dev.type,
-        interval: dev.interval,
-      }
+  const demoUser = await prisma.user.upsert({
+    where: { email: 'demo@netscope.internal' },
+    update: {},
+    create: {
+      username: 'demo',
+      email: 'demo@netscope.internal',
+      passwordHash,
+      fullName: 'Demo Engineer',
+      role: 'USER',
+    },
+  });
+
+  console.log(`✅ Operator user ensured: admin@netscope.internal / AdminPass123!`);
+
+  // 2. Seed Default Regional Lab Probes (Clearly labeled as simulated lab locations)
+  const probeA_Token = 'nsp_probe_lab_us_east_secret_token_123';
+  const probeB_Token = 'nsp_probe_lab_eu_west_secret_token_456';
+
+  const probeA = await prisma.probe.upsert({
+    where: { tokenHash: hashToken(probeA_Token) },
+    update: {},
+    create: {
+      id: 'probe-lab-us-east',
+      name: 'Lab Simulated US-East Probe',
+      region: 'lab-simulated-us-east',
+      tokenHash: hashToken(probeA_Token),
+      status: 'ONLINE',
+      version: '1.0.0',
+    },
+  });
+
+  const probeB = await prisma.probe.upsert({
+    where: { tokenHash: hashToken(probeB_Token) },
+    update: {},
+    create: {
+      id: 'probe-lab-eu-west',
+      name: 'Lab Simulated EU-West Probe',
+      region: 'lab-simulated-eu-west',
+      tokenHash: hashToken(probeB_Token),
+      status: 'ONLINE',
+      version: '1.0.0',
+    },
+  });
+
+  console.log(`✅ Lab Probes seeded: ${probeA.name} (${probeA.region}) & ${probeB.name} (${probeB.region})`);
+
+  // 3. Seed Operator Control Endpoint
+  await prisma.controlEndpoint.upsert({
+    where: { id: 'control-default-lab' },
+    update: {},
+    create: {
+      id: 'control-default-lab',
+      name: 'Operator Lab Baseline',
+      url: 'http://fault-target:9090/control',
+      expectedStatus: 200,
+      enabled: true,
+    },
+  });
+  console.log(`✅ Operator Control Endpoint seeded`);
+
+  // 4. Seed Initial Monitors for demo
+  const sampleMonitors = [
+    {
+      name: 'Fault Lab: Healthy Service',
+      host: 'http://fault-target:9090/healthy',
+      type: 'API',
+      interval: 10,
+      timeoutMs: 5000,
+      baselineLatency: 15,
+      selectedProbes: [probeA.id, probeB.id],
+    },
+    {
+      name: 'Fault Lab: Intermittent Outage',
+      host: 'http://fault-target:9090/flaky',
+      type: 'API',
+      interval: 10,
+      timeoutMs: 5000,
+      baselineLatency: 20,
+      selectedProbes: [probeA.id, probeB.id],
+    },
+    {
+      name: 'Fault Lab: Geo-Blocked Service',
+      host: 'http://fault-target:9090/geo-blocked',
+      type: 'API',
+      interval: 10,
+      timeoutMs: 5000,
+      baselineLatency: 25,
+      selectedProbes: [probeA.id, probeB.id],
+    },
+  ];
+
+  for (const mon of sampleMonitors) {
+    const existing = await prisma.device.findFirst({
+      where: { userId: adminUser.id, host: mon.host },
     });
-
-    console.log(`✅ Created device: ${device.name}`);
-
-    // Generate 50 fake historical logs per device
-    const logsData = [];
-    let currentTime = new Date();
-
-    for (let i = 0; i < 50; i++) {
-      // Subtract minutes to go backward in time
-      const checkTime = new Date(currentTime.getTime() - (i * dev.interval * 1000)); 
-      
-      // 90% chance it was UP, 10% chance it was DOWN
-      const isUp = Math.random() > 0.1;
-      
-      // Random latency between 20ms and 150ms
-      const baseLatency = dev.type === 'PING' ? 15 : 45;
-      const latency = isUp ? Math.floor(Math.random() * 80) + baseLatency : null;
-
-      logsData.push({
-        deviceId: device.id,
-        status: isUp ? 'UP' : 'DOWN',
-        latency: latency,
-        message: isUp ? null : 'Connection timed out after 5000ms',
-        checkedAt: checkTime,
+    if (!existing) {
+      await prisma.device.create({
+        data: {
+          userId: adminUser.id,
+          name: mon.name,
+          host: mon.host,
+          type: mon.type,
+          interval: mon.interval,
+          timeoutMs: mon.timeoutMs,
+          baselineLatency: mon.baselineLatency,
+          selectedProbes: mon.selectedProbes,
+          enabled: true,
+        },
       });
+      console.log(`✅ Created monitor: ${mon.name} (${mon.host})`);
     }
-
-    // Bulk insert the logs
-    await prisma.healthLog.createMany({ data: logsData });
-    console.log(`   📊 Added 50 historical logs for ${device.name}`);
   }
 
-  console.log('🎉 Seeding complete! Your dashboard is now full of data.');
+  console.log('🎉 Seeding complete. All telemetry will be collected live from running probes.');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error('Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

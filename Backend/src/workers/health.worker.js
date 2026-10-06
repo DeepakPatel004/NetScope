@@ -42,20 +42,16 @@ export const startHealthWorker = () => {
         // 4. Fetch device details, health history, and latest agent metrics
         const device = await prisma.device.findUnique({
           where: { id: deviceId },
-          select: { id: true, name: true, host: true, userId: true, agentStatus: true, metricsSource: true },
+          select: { id: true, name: true, host: true, userId: true },
         });
 
         if (device) {
           const history = await healthService.getDeviceHealthHistory(deviceId, 30);
           const chronHistory = [...history].reverse();
 
-          const latestAgentMetric = await prisma.agentMetric.findFirst({
-            where: { deviceId },
-            orderBy: { checkedAt: 'desc' },
-          });
 
           // 5. Run Independent Statistical Anomaly Detection (Local Node.js Engine)
-          const statAnomaly = statisticalAnomalyService.detectStatisticalAnomaly(device, chronHistory, latestAgentMetric);
+          const statAnomaly = statisticalAnomalyService.detectStatisticalAnomaly(device, chronHistory);
 
           // 6. Call Python AI Microservice for AI Anomaly Vectorization (Fallback Safe)
           let aiAnomaly = { is_anomaly: false, anomaly_score: 0.0, severity: 'LOW', detection_reason: '' };
@@ -66,7 +62,7 @@ export const startHealthWorker = () => {
           }
 
           // 7. Process through Smart Incident Engine (Debounced, Deduplicated, Correlated State Machine)
-          await incidentEngine.processTelemetrySample(device, checkResult, statAnomaly, aiAnomaly, latestAgentMetric);
+          await incidentEngine.processTelemetrySample(device, checkResult, statAnomaly, aiAnomaly);
         }
 
         return checkResult;

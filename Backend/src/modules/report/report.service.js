@@ -26,7 +26,7 @@ export const reportService = {
       const logsWithLatency = device.healthLogs.filter((log) => log.latency !== null && log.latency > 0);
       const uptimeLogs = device.healthLogs.length;
       const onlineLogs = device.healthLogs.filter((log) => log.status === 'UP').length;
-      const uptimePercentage = uptimeLogs > 0 ? Math.round((onlineLogs / uptimeLogs) * 100) : 100;
+      const uptimePercentage = uptimeLogs > 0 ? Math.round((onlineLogs / uptimeLogs) * 100) : null;
       const averageLatency = logsWithLatency.length > 0
         ? Math.round(logsWithLatency.reduce((sum, log) => sum + log.latency, 0) / logsWithLatency.length)
         : 0;
@@ -62,9 +62,10 @@ export const reportService = {
     const averageLatency = deviceReports.length > 0
       ? Math.round(deviceReports.reduce((sum, device) => sum + device.averageLatency, 0) / deviceReports.length)
       : 0;
-    const overallUptime = deviceReports.length > 0
-      ? Math.round(deviceReports.reduce((sum, device) => sum + device.uptimePercentage, 0) / deviceReports.length)
-      : 100;
+    const measuredDevices = deviceReports.filter(device => device.uptimePercentage !== null);
+    const overallUptime = measuredDevices.length > 0
+      ? Math.round(measuredDevices.reduce((sum, device) => sum + device.uptimePercentage, 0) / measuredDevices.length)
+      : null;
 
     const sslSummary = deviceReports.reduce((summary, device) => {
       const status = device.sslStatus || 'UNKNOWN';

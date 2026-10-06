@@ -1,16 +1,3 @@
-# NetScope Infrastructure Agent
+# Host agent retired
 
-A lightweight cross-platform Python monitoring agent that collects CPU, RAM, Disk, System Load, and Network metrics and reports them to NetScope.
-
-## Quickstart
-
-```bash
-pip install -r requirements.txt
-python agent.py --server=http://localhost:5000 --key=YOUR_AGENT_KEY --interval=15
-```
-
-## Options
-
-- `--server`: NetScope Backend API URL (default: `http://localhost:5000`)
-- `--key`: Required unique Agent Key generated for your server resource in NetScope.
-- `--interval`: Metric reporting frequency in seconds (default: 15).
+NetScope now monitors endpoints without installing an agent. CPU, RAM, disk, and container collection and remote restart execution have been removed. Existing agents should be stopped and uninstalled on their hosts. Historical database records are retained.

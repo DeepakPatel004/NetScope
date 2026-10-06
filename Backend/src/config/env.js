@@ -5,10 +5,10 @@ import {z} from 'zod'
 dotenv.config({path : path.resolve(import.meta.dirname, '../../.env')})
 
 const evSchema = z.object( {
-    PORT: z.coerce.number().int().positive(),
+    PORT: z.coerce.number().int().positive().default(5000),
   DATABASE_URL: z.string().trim().min(1),
   REDIS_URL: z.string().trim().min(1),
-  NODE_ENV: z.enum(['development', 'production', 'test']),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 })
 
 const env = evSchema.parse(process.env)

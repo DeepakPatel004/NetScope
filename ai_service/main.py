@@ -13,12 +13,10 @@ from schemas import (
 from models.anomaly_detector import anomaly_detector
 from models.alert_prioritizer import alert_prioritizer
 from services.llm_analyzer import llm_analyzer
-from mcp.netscope_mcp import netscope_mcp
-from agent.sre_agent import sre_agent
 
 app = FastAPI(
-    title="NetScope AI Intelligence & MCP Microservice",
-    description="Isolation Forest Anomaly Detection, Alert Prioritization, LangChain SRE Agent, MCP Tools Layer, and Interactive Telemetry Explanations",
+    title="NetScope Anomaly Detection Service",
+    description="Endpoint anomaly detection and telemetry-based incident explanations",
     version="2.0.0"
 )
 
@@ -35,17 +33,11 @@ app.add_middleware(
 def health_check():
     return {
         "status": "healthy",
-        "service": "NetScope AI & MCP Microservice",
+        "service": "NetScope AI Microservice",
         "ai_enabled": settings.AI_ENABLED,
         "groq_model": settings.GROQ_MODEL,
-        "mcp_tools_count": len(netscope_mcp.get_tool_definitions()),
         "api_key_configured": bool(settings.GROQ_API_KEY)
     }
-
-@app.get("/mcp/tools")
-def list_mcp_tools():
-    """List all available NetScope Model Context Protocol (MCP) tools."""
-    return {"tools": netscope_mcp.get_tool_definitions()}
 
 @app.post("/detect-anomaly", response_model=AnomalyDetectionResponse)
 def detect_anomaly(request: AnomalyDetectionRequest):
@@ -57,7 +49,7 @@ def detect_anomaly(request: AnomalyDetectionRequest):
 @app.post("/analyze-incident", response_model=IncidentAnalysisResponse)
 async def analyze_incident(request: IncidentAnalysisRequest):
     try:
-        return await sre_agent.investigate_incident(request)
+        return await llm_analyzer.analyze_incident(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Incident analysis error: {str(e)}")
 
@@ -85,11 +77,7 @@ async def generate_playbook(request: RemediationPlaybookRequest):
 @app.post("/explain-insight", response_model=ExplainInsightResponse)
 async def explain_insight(request: ExplainInsightRequest):
     try:
-        chat_res = await sre_agent.chat_assistant(request.prompt, request.device_name)
-        return ExplainInsightResponse(
-            summary=chat_res.get("summary", "Telemetry looks nominal."),
-            recommendations=chat_res.get("recommendations", [])
-        )
+        return await llm_analyzer.explain_insight(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Explain insight error: {str(e)}")
 

@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { statisticalAnomalyService } from '../modules/anomaly/statisticalAnomaly.service.js';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-const TIMEOUT_MS = Number(process.env.AI_SERVICE_TIMEOUT_MS) || 6000;
+const TIMEOUT_MS = Number(process.env.AI_SERVICE_TIMEOUT_MS) || 15000;
 
 const client = axios.create({
   baseURL: AI_SERVICE_URL,
@@ -50,13 +51,14 @@ export const aiClient = {
       const response = await client.post('/detect-anomaly', payload);
       return response.data;
     } catch (error) {
-      console.warn(`[aiClient] Anomaly detection call failed (${error.message}). Falling back to normal status.`);
+      console.warn(`[aiClient] Anomaly detection call failed (${error.message}). Using local statistical detection.`);
+      const fallback = statisticalAnomalyService.detectStatisticalAnomaly(device, historyLogs);
       return {
-        is_anomaly: false,
-        anomaly_score: 0.0,
-        severity: 'LOW',
-        detection_reason: 'AI microservice unavailable; operating in fallback monitoring mode.',
-        metrics_evaluated: {},
+        is_anomaly: fallback.isAnomaly,
+        anomaly_score: fallback.anomalyScore,
+        severity: fallback.severity,
+        detection_reason: `AI microservice unavailable; local statistical detection: ${fallback.detectionReason}`,
+        metrics_evaluated: fallback.metrics,
       };
     }
   },
@@ -179,8 +181,8 @@ export const aiClient = {
         remediation_steps: [
           `Execute socket connectivity ping against target host '${deviceHost}'`,
           `Review systemctl and container execution logs for process crashes`,
-          `Flush local DNS resolver cache and verify gateway firewall rules`,
-          `Restart application service process if memory limit is exceeded`
+          `Inspect DNS resolution and gateway firewall rules`,
+          `Inspect application memory limits and usage`
         ]
       };
     }

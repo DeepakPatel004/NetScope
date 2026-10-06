@@ -1,10 +1,9 @@
 import prisma from '../../config/database.js';
 import { analyticsService } from '../analytics/analytics.service.js';
 import { reportService } from '../report/report.service.js';
-import { buildFallbackSummary, buildInsightPrompt } from './prompt.builder.js';
+import { buildFallbackSummary } from './prompt.builder.js';
 import { aiClient } from '../../utils/aiClient.js';
 
-const reportSnapshots = new Map();
 
 function buildUnavailableAiResponse(fallback = null) {
   const defaultRecommendations = [
@@ -66,10 +65,11 @@ function normalizeAiContent(text) {
 
 function sanitizeAiResponse(responsePayload, fallback) {
   if (!responsePayload || !responsePayload.summary) {
-    return fallback;
+    return buildUnavailableAiResponse(fallback);
   }
 
   const summary = normalizeAiContent(responsePayload.summary);
+  if (isIncompleteAiFragment(summary)) return buildUnavailableAiResponse(fallback);
   const recommendations = Array.isArray(responsePayload.recommendations)
     ? responsePayload.recommendations.map(normalizeAiContent).filter(Boolean)
     : fallback.recommendations;
@@ -86,6 +86,7 @@ async function getDeviceContext(userId, deviceId) {
       id: deviceId,
       userId,
     },
+    select: { id: true, name: true, host: true, type: true },
   });
 }
 
@@ -107,7 +108,7 @@ export const aiService = {
       const aiResponse = await aiClient.generateContent(prompt, { kind: 'ssl', device, ssl: sslAudit });
       return sanitizeAiResponse(aiResponse, fallback);
     } catch (error) {
-      return fallback;
+      return buildUnavailableAiResponse(fallback);
     }
   },
 
@@ -129,7 +130,7 @@ export const aiService = {
       const aiResponse = await aiClient.generateContent(prompt, { kind: 'ports', device, portScan });
       return sanitizeAiResponse(aiResponse, fallback);
     } catch (error) {
-      return fallback;
+      return buildUnavailableAiResponse(fallback);
     }
   },
 
@@ -152,7 +153,7 @@ export const aiService = {
       const aiResponse = await aiClient.generateContent(prompt, { kind: 'health', device, healthHistory, metrics: analytics });
       return sanitizeAiResponse(aiResponse, fallback);
     } catch (error) {
-      return fallback;
+      return buildUnavailableAiResponse(fallback);
     }
   },
 
@@ -187,28 +188,25 @@ export const aiService = {
       const aiResponse = await aiClient.generateContent(prompt, { kind: 'device', ...contextData });
       return sanitizeAiResponse(aiResponse, fallback);
     } catch (error) {
-      return fallback;
+      return buildUnavailableAiResponse(fallback);
     }
   },
 
   async explainReport(userId, reportId) {
     const reportData = await reportService.getReportData(userId, reportId);
-    reportSnapshots.set(reportId, reportData);
 
     const fallback = buildFallbackSummary('report', reportData);
     try {
       const aiResponse = await aiClient.generateContent('Summarize executive SLA report', { kind: 'report', ...reportData });
       return sanitizeAiResponse(aiResponse, fallback);
     } catch (error) {
-      return fallback;
+      return buildUnavailableAiResponse(fallback);
     }
   },
 
   async chat(userId, prompt, deviceId = null) {
-    let device = null;
-    if (deviceId) {
-      device = await prisma.device.findFirst({ where: { id: deviceId, userId } }).catch(() => null);
-    }
+    if (deviceId) return this.analyzeDevice(userId, deviceId, prompt);
+    const device = null;
     
     const fallback = {
       summary: `NetScope SRE Assistant analysis for: "${prompt}"`,
@@ -225,7 +223,7 @@ export const aiService = {
       }
       return fallback;
     } catch (error) {
-      return fallback;
+      return buildUnavailableAiResponse(fallback);
     }
   },
 
@@ -251,19 +249,17 @@ export const aiService = {
     return records.filter((r) => r.device !== null);
   },
 
-  async getIncidents(userId) {
+  async getIncidents(userId, deviceId = null) {
     const records = await prisma.incident.findMany({
       where: {
         device: { userId },
+        ...(deviceId ? { deviceId } : {}),
       },
       include: {
         device: {
-          select: { id: true, name: true, host: true, type: true, agentStatus: true, containers: true, capabilities: true },
+          select: { id: true, name: true, host: true, type: true },
         },
-        recoveryActions: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        },
+        anomaly: true,
       },
       orderBy: { openedAt: 'desc' },
       take: 20,
@@ -311,12 +307,17 @@ export const aiService = {
       ? chronLogs.filter((h) => h.status === 'DOWN' || (h.responseCode && h.responseCode >= 400)).length / chronLogs.length 
       : 0.0;
 
+    let consecutiveFailures = 0;
+    for (const log of [...chronLogs].reverse()) {
+      if (log.status !== 'DOWN' && !(log.responseCode >= 400)) break;
+      consecutiveFailures++;
+    }
     const priorityRes = await aiClient.prioritizeAlert(
       anomalyRes.severity,
       chronLogs.length,
       downCount,
       errorRate,
-      downCount,
+      consecutiveFailures,
       device.name,
       anomalyRes.anomaly_score
     );
@@ -346,10 +347,11 @@ export const aiService = {
 
     const logs = await prisma.healthLog.findMany({
       where: { deviceId },
-      orderBy: { checkedAt: 'asc' },
+      orderBy: { checkedAt: 'desc' },
       take: 40,
     });
 
+    logs.reverse();
     const startTime = logs.length > 0 ? logs[0].checkedAt?.toISOString() : null;
     const endTime = logs.length > 0 ? logs[logs.length - 1].checkedAt?.toISOString() : null;
 

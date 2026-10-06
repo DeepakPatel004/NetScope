@@ -69,7 +69,7 @@ class LLMIncidentAnalyzer:
 
     async def generate_playbook(self, request: RemediationPlaybookRequest) -> RemediationPlaybookResponse:
         prompt = f"""
-Generate an actionable CLI remediation playbook to resolve the infrastructure incident described below.
+Generate a read-only diagnostic playbook for the incident below. Do not suggest restarts, reboots, or commands that modify infrastructure.
 
 Target Service: {request.device_name} ({request.device_host})
 Type: {request.device_type}
@@ -78,17 +78,17 @@ Possible Causes: {", ".join(request.possible_causes)}
 
 Respond with EXACT JSON matching this schema:
 {{
-  "playbook_title": "Automated SRE Recovery Playbook — {request.device_name}",
+  "playbook_title": "SRE Diagnostic Playbook — {request.device_name}",
   "estimated_recovery_mins": 5,
   "cli_commands": [
     "curl -I {request.device_host}",
-    "docker restart {request.device_name.lower().replace(' ', '-')}",
+    "docker ps -a",
     "systemctl status network-manager"
   ],
   "remediation_steps": [
     "Verify socket connectivity ping against target host '{request.device_host}'",
     "Review host systemctl and container logs for process crashes",
-    "Flush local DNS resolver cache and verify firewall rules"
+    "Inspect DNS resolution and firewall rules"
   ]
 }}
 """
@@ -119,8 +119,8 @@ Respond with EXACT JSON matching this schema:
             remediation_steps=[
                 f"Execute socket connectivity ping against target host '{request.device_host}'",
                 "Review systemctl and container execution logs for process crashes",
-                "Flush local DNS resolver cache and verify gateway firewall rules",
-                "Restart application service process if memory limit is exceeded"
+                "Inspect DNS resolution and gateway firewall rules",
+                "Inspect application memory limits and usage"
             ]
         )
 
@@ -141,7 +141,8 @@ CRITICAL INSTRUCTIONS:
    - Do NOT output a generic canned device status template if the user asked a specific question.
 2. Keep the answer natural, concise, professional, and friendly (no robotic template repetition).
 3. Provide 2-3 relevant, actionable technical recommendations matching the question.
-4. Output MUST be strictly valid JSON matching this schema with NO markdown wrappers:
+4. Never infer healthy status from missing telemetry. Recommend read-only investigation, without restart or reboot actions.
+5. Output MUST be strictly valid JSON matching this schema with NO markdown wrappers:
 
 {{
   "summary": "Direct, conversational, accurate response answering the user's inquiry",
@@ -162,7 +163,7 @@ CRITICAL INSTRUCTIONS:
                 logger.warning(f"Groq API call failed for explain_insight: {e}")
 
         return ExplainInsightResponse(
-            summary=f"Telemetry report for {request.device_name} ({request.device_host}): Endpoint is responsive.",
+            summary=f"AI is currently unavailable. Review the recorded telemetry for {request.device_name}; current health has not been verified by this response.",
             recommendations=[
                 "Continue routine automated monitoring sweeps.",
                 "Review security configurations periodically."
